@@ -110,7 +110,7 @@ html, body, [class*="css"], .stApp {
     display: inline-block;
 }
 .coin-price {
-    font-size: 48px;
+    font-size: 64px;
     font-weight: 800;
     color: #FFFFFF;
     letter-spacing: -1.5px;
@@ -1129,51 +1129,49 @@ _pc_glow = (
     f"box-shadow:0 0 0 2px {asset_color}, 0 0 32px {asset_color}55, 0 8px 48px rgba(0,0,0,0.5);"
     f"border-color:{asset_color};"
 )
-_pc_col, _ = st.columns([2, 1], gap="large")
-with _pc_col:
-    if prices and selected_coin in prices:
-        _p    = prices[selected_coin]
-        _price = _p.get("usd")
-        _chg   = _p.get("usd_24h_change")
-        _mcap  = _p.get("usd_market_cap")
-        _vol   = _p.get("usd_24h_vol")
-        st.markdown(
-            f'<div class="price-card" style="--accent:{asset_color}; {_pc_glow}">'
-            f'<div class="coin-label" style="color:{asset_color}; font-size:15px;">'
-            f'<span class="coin-dot" style="background:{asset_color}; width:12px; height:12px;"></span>'
-            f'{_pc_meta["symbol"]}'
-            f'<span style="color:#475569; font-weight:400;"> · </span>'
-            f'<span style="color:#94A3B8; font-weight:500;">{_pc_meta["name"]}</span>'
-            f'</div>'
-            f'<div class="coin-price" style="font-size:52px;">{fmt_price(_price)}</div>'
-            f'<div style="margin:6px 0 0 0;">'
-            f'{change_badge(_chg)}'
-            f'<span style="color:#475569; font-size:13px; margin-left:8px;">24h change</span>'
-            f'</div>'
-            f'<div class="sub-grid" style="margin-top:16px;">'
-            f'<div><div class="sub-item-label">Market Cap</div>'
-            f'<div class="sub-item-value" style="font-size:16px;">{fmt_usd(_mcap)}</div></div>'
-            f'<div><div class="sub-item-label">Volume 24h</div>'
-            f'<div class="sub-item-value" style="font-size:16px;">{fmt_usd(_vol)}</div></div>'
-            f'</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-        _spark = make_sparkline(charts.get(selected_coin), asset_color)
-        if _spark:
-            st.plotly_chart(_spark, use_container_width=True,
-                            config={"displayModeBar": False})
-    else:
-        st.markdown(
-            f'<div class="price-card" style="--accent:#334155;">'
-            f'<div class="coin-label" style="color:#475569;">'
-            f'<span class="coin-dot" style="background:{asset_color};"></span>'
-            f'{_pc_meta["symbol"]} · {_pc_meta["name"]}'
-            f'</div>'
-            f'<div class="coin-price" style="color:#334155; font-size:32px;">Data unavailable</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+if prices and selected_coin in prices:
+    _p     = prices[selected_coin]
+    _price = _p.get("usd")
+    _chg   = _p.get("usd_24h_change")
+    _mcap  = _p.get("usd_market_cap")
+    _vol   = _p.get("usd_24h_vol")
+    st.markdown(
+        f'<div class="price-card" style="--accent:{asset_color}; {_pc_glow}">'
+        f'<div class="coin-label" style="color:{asset_color}; font-size:15px;">'
+        f'<span class="coin-dot" style="background:{asset_color}; width:12px; height:12px;"></span>'
+        f'{_pc_meta["symbol"]}'
+        f'<span style="color:#475569; font-weight:400;"> · </span>'
+        f'<span style="color:#94A3B8; font-weight:500;">{_pc_meta["name"]}</span>'
+        f'</div>'
+        f'<div class="coin-price">{fmt_price(_price)}</div>'
+        f'<div style="margin:6px 0 0 0;">'
+        f'{change_badge(_chg)}'
+        f'<span style="color:#475569; font-size:13px; margin-left:8px;">24h change</span>'
+        f'</div>'
+        f'<div class="sub-grid" style="margin-top:16px;">'
+        f'<div><div class="sub-item-label">Market Cap</div>'
+        f'<div class="sub-item-value" style="font-size:16px;">{fmt_usd(_mcap)}</div></div>'
+        f'<div><div class="sub-item-label">Volume 24h</div>'
+        f'<div class="sub-item-value" style="font-size:16px;">{fmt_usd(_vol)}</div></div>'
+        f'</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+    _spark = make_sparkline(charts.get(selected_coin), asset_color)
+    if _spark:
+        st.plotly_chart(_spark, use_container_width=True,
+                        config={"displayModeBar": False})
+else:
+    st.markdown(
+        f'<div class="price-card" style="--accent:#334155;">'
+        f'<div class="coin-label" style="color:#475569;">'
+        f'<span class="coin-dot" style="background:{asset_color};"></span>'
+        f'{_pc_meta["symbol"]} · {_pc_meta["name"]}'
+        f'</div>'
+        f'<div class="coin-price" style="color:#334155;">Data unavailable</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 7-DAY PRICE HISTORY CHARTS
