@@ -544,6 +544,20 @@ def fetch_trending():
     except Exception:
         return None
 
+@st.cache_data(ttl=1800, show_spinner=False)
+def fetch_crypto_news(query="crypto OR bitcoin OR ethereum"):
+    try:
+        url = (
+            "https://newsapi.org/v2/everything"
+            f"?q={query}&sortBy=publishedAt&pageSize=8"
+            "&language=en&apiKey=YOUR_KEY_HERE"
+        )
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        return r.json()
+    except Exception:
+        return None
+
 @st.cache_data(ttl=600, show_spinner=False)
 def fetch_chart(coin_id: str):
     # Free CoinGecko tier: days=7 auto-returns hourly data; no interval param needed
@@ -817,6 +831,7 @@ with st.spinner("Loading market data…"):
     onchain     = fetch_onchain()
     eth_onchain = fetch_eth_onchain()
     trending    = fetch_trending()
+    news        = fetch_crypto_news()
     charts      = {st.session_state.selected_asset: fetch_chart(st.session_state.selected_asset)}
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1612,6 +1627,71 @@ with right:
             '</div>',
             unsafe_allow_html=True,
         )
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LATEST CRYPTO NEWS
+# ═══════════════════════════════════════════════════════════════════════════════
+st.markdown('<div class="section-header">Latest Crypto News</div>', unsafe_allow_html=True)
+
+_BULLISH_KW = {"surge", "rally", "gain", "high", "bull", "rise", "up", "record", "adoption", "approve"}
+_BEARISH_KW = {"crash", "drop", "fall", "bear", "low", "hack", "ban", "sell", "fear", "warning"}
+
+def _news_sentiment(title: str):
+    words = set(title.lower().split())
+    if words & _BULLISH_KW:
+        return "BULLISH", "#10B981"
+    if words & _BEARISH_KW:
+        return "BEARISH", "#EF4444"
+    return "NEUTRAL", "#64748B"
+
+def _time_ago(published_at: str) -> str:
+    try:
+        pub = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
+        delta = datetime.utcnow() - pub
+        mins  = int(delta.total_seconds() // 60)
+        if mins < 60:
+            return f"{mins}m ago"
+        hours = mins // 60
+        if hours < 24:
+            return f"{hours}h ago"
+        return f"{hours // 24}d ago"
+    except Exception:
+        return ""
+
+_articles = (news or {}).get("articles", [])
+if _articles:
+    _news_cols = st.columns(2, gap="large")
+    for i, article in enumerate(_articles[:8]):
+        _title  = article.get("title") or ""
+        _source = (article.get("source") or {}).get("name", "")
+        _pub    = article.get("publishedAt", "")
+        _url    = article.get("url", "#")
+        _ago    = _time_ago(_pub)
+        _slabel, _scolor = _news_sentiment(_title)
+        with _news_cols[i % 2]:
+            st.markdown(
+                f'<div class="oc-tile" style="margin-bottom:8px;">'
+                f'<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">'
+                f'<a href="{_url}" target="_blank" rel="noopener" style="color:#E2E8F0; font-size:13px;'
+                f' font-weight:600; line-height:1.4; text-decoration:none; flex:1;">{_title}</a>'
+                f'<span style="font-size:10px; font-weight:700; letter-spacing:1px; color:{_scolor};'
+                f' white-space:nowrap; margin-top:2px;">{_slabel}</span>'
+                f'</div>'
+                f'<div style="margin-top:8px; color:#475569; font-size:11px;">'
+                f'{_source}'
+                f'{"&nbsp;·&nbsp;" + _ago if _ago else ""}'
+                f'</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+else:
+    st.markdown(
+        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
+        '<div style="font-size:28px; margin-bottom:8px;">📰</div>'
+        '<div style="font-size:14px;">News unavailable — add your NewsAPI key to enable this section</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WAITLIST
