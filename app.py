@@ -912,12 +912,16 @@ if st.session_state.theme == 'light':
         background: linear-gradient(135deg, #EBF4FF 0%, #F0E6FF 100%) !important;
         border-color: #CBD5E1 !important;
     }
-    .waitlist-sub { color: #475569 !important; }
+    .waitlist-headline { color: #0F172A !important; }
+    .waitlist-sub { color: #374151 !important; }
+    .waitlist-value-point,
+    .waitlist-card p { color: #1F2937 !important; }
     .waitlist-counter-box {
         background: rgba(0,180,220,0.06) !important;
         border-color: rgba(0,180,220,0.2) !important;
     }
-    .waitlist-counter-label { color: #475569 !important; }
+    .waitlist-counter-num { color: #0284C7 !important; }
+    .waitlist-counter-label { color: #374151 !important; }
     div[data-testid="stSelectbox"] > div > div {
         background: #FFFFFF !important;
         border-color: #CBD5E1 !important;
