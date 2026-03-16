@@ -1402,35 +1402,106 @@ with right:
     elif selected_coin == "ethereum":
         st.markdown('<div class="subsection-label">Ethereum Network Metrics</div>',
                     unsafe_allow_html=True)
-        # eth_onchain returns the "result" dict (SafeGasPrice, ProposeGasPrice, FastGasPrice, UsdPrice)
-        if eth_onchain and eth_onchain.get("SafeGasPrice"):
-            res = eth_onchain
-            eth_tiles = [
-                ("Safe Gas Price",    f"{res.get('SafeGasPrice', '—')}",    "Gwei"),
-                ("Standard Gas Price",f"{res.get('ProposeGasPrice', '—')}", "Gwei"),
-                ("Fast Gas Price",    f"{res.get('FastGasPrice', '—')}",    "Gwei"),
-                ("ETH/USD Price",     f"${float(res.get('UsdPrice', 0)):,.2f}", ""),
-            ]
-            r1 = st.columns(4, gap="medium")
-            for (label, value, unit), col in zip(eth_tiles, r1):
-                with col:
-                    st.markdown(f"""
-                    <div class="oc-tile">
-                        <div class="oc-label">{label}</div>
-                        <div class="oc-value">{value}
-                            <span class="oc-unit">{unit}</span>
-                        </div>
-                    </div>""", unsafe_allow_html=True)
-                    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-        if prices and "ethereum" in prices:
-            p = prices["ethereum"]
-            st.markdown(f"""
-            <div class="oc-tile" style="margin-top:8px;">
-                <div class="oc-label">Market Cap</div>
-                <div class="oc-value">{fmt_usd(p.get("usd_market_cap"))}
-                    <span class="oc-unit">USD</span>
-                </div>
-            </div>""", unsafe_allow_html=True)
+
+        # ── Derive values ──────────────────────────────────────────────────────
+        _ep = prices.get("ethereum", {}) if prices else {}
+        _eth_price    = fmt_price(_ep.get("usd"))
+        _eth_chg      = _ep.get("usd_24h_change", 0) or 0
+        _eth_chg_col  = "#10B981" if _eth_chg >= 0 else "#EF4444"
+        _eth_mcap     = fmt_usd(_ep.get("usd_market_cap"))
+        _eth_vol      = fmt_usd(_ep.get("usd_24h_vol"))
+
+        _eth_df = charts.get("ethereum") if charts else None
+        if _eth_df is not None and not _eth_df.empty:
+            _eth_7d = ((_eth_df["price"].iloc[-1] / _eth_df["price"].iloc[0]) - 1) * 100
+        else:
+            _eth_7d = None
+
+        # ── Row 1: Price · 24h Change · Market Cap ────────────────────────────
+        _er1 = st.columns(3, gap="medium")
+        with _er1[0]:
+            st.markdown(
+                f'<div class="oc-tile">'
+                f'<div class="oc-label">ETH Price</div>'
+                f'<div class="oc-value">{_eth_price}<span class="oc-unit">USD</span></div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        with _er1[1]:
+            st.markdown(
+                f'<div class="oc-tile">'
+                f'<div class="oc-label">24h Change</div>'
+                f'<div class="oc-value" style="color:{_eth_chg_col};">{_eth_chg:+.2f}%</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        with _er1[2]:
+            st.markdown(
+                f'<div class="oc-tile">'
+                f'<div class="oc-label">Market Cap</div>'
+                f'<div class="oc-value">{_eth_mcap}<span class="oc-unit">USD</span></div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
+        # ── Row 2: 24h Volume · 7-Day Trend · Gas Prices ─────────────────────
+        _er2 = st.columns(3, gap="medium")
+        with _er2[0]:
+            st.markdown(
+                f'<div class="oc-tile">'
+                f'<div class="oc-label">24h Volume</div>'
+                f'<div class="oc-value">{_eth_vol}<span class="oc-unit">USD</span></div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        with _er2[1]:
+            if _eth_7d is not None:
+                _t_col = "#10B981" if _eth_7d >= 0 else "#EF4444"
+                _t_val = f"{_eth_7d:+.2f}%"
+            else:
+                _t_col, _t_val = "#475569", "—"
+            st.markdown(
+                f'<div class="oc-tile">'
+                f'<div class="oc-label">7-Day Trend</div>'
+                f'<div class="oc-value" style="color:{_t_col};">{_t_val}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        with _er2[2]:
+            if eth_onchain and eth_onchain.get("SafeGasPrice"):
+                _gas_safe = eth_onchain.get("SafeGasPrice", "—")
+                _gas_std  = eth_onchain.get("ProposeGasPrice", "—")
+                _gas_fast = eth_onchain.get("FastGasPrice", "—")
+                st.markdown(
+                    f'<div class="oc-tile">'
+                    f'<div class="oc-label">Gas Price (Gwei)</div>'
+                    f'<div style="margin-top:8px; display:flex; flex-direction:column; gap:4px;">'
+                    f'<div style="display:flex; justify-content:space-between; font-size:12px;">'
+                    f'<span style="color:#64748B;">Safe</span>'
+                    f'<span style="color:#10B981; font-weight:600;">{_gas_safe}</span></div>'
+                    f'<div style="display:flex; justify-content:space-between; font-size:12px;">'
+                    f'<span style="color:#64748B;">Standard</span>'
+                    f'<span style="color:#F59E0B; font-weight:600;">{_gas_std}</span></div>'
+                    f'<div style="display:flex; justify-content:space-between; font-size:12px;">'
+                    f'<span style="color:#64748B;">Fast</span>'
+                    f'<span style="color:#EF4444; font-weight:600;">{_gas_fast}</span></div>'
+                    f'</div></div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    '<div class="oc-tile">'
+                    '<div class="oc-label">Gas Price (Gwei)</div>'
+                    '<div class="oc-value" style="color:#475569; font-size:16px;">Unavailable</div>'
+                    '</div>',
+                    unsafe_allow_html=True,
+                )
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
     elif selected_coin == "solana":
         st.markdown('<div class="subsection-label">Solana Network Metrics</div>',
