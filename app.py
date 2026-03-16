@@ -1162,67 +1162,76 @@ _ordered_coins = [(selected_coin, COINS[selected_coin])] + [
     (cid, m) for cid, m in COINS.items() if cid != selected_coin
 ]
 
-pcols = st.columns(3, gap="large")
-for i, (coin_id, meta) in enumerate(_ordered_coins):
-    with pcols[i % 3]:
-        is_sel         = (coin_id == selected_coin)
-        highlight_css  = (
-            f"box-shadow:0 0 0 2px {meta['color']}66, 0 8px 32px rgba(0,0,0,0.4);"
-            f"border-color:{meta['color']}99;"
-        ) if is_sel else ""
+def _render_price_card(coin_id, meta, prices, charts, selected_coin):
+    is_sel        = (coin_id == selected_coin)
+    highlight_css = (
+        f"box-shadow:0 0 0 2px {meta['color']}66, 0 8px 32px rgba(0,0,0,0.4);"
+        f"border-color:{meta['color']}99;"
+    ) if is_sel else ""
+    selected_badge = (
+        f"&nbsp;<span style='font-size:10px; font-weight:700; letter-spacing:1.5px;"
+        f"color:{meta['color']}; opacity:0.8;'>SELECTED</span>"
+    ) if is_sel else ""
 
-        if prices and coin_id in prices:
-            p     = prices[coin_id]
-            price = p.get("usd")
-            chg   = p.get("usd_24h_change")
-            mcap  = p.get("usd_market_cap")
-            vol   = p.get("usd_24h_vol")
-
-            st.markdown(f"""
-            <div class="price-card" style="--accent:{meta['color']}; {highlight_css}">
-                <div class="coin-label" style="color:{meta['color']};">
-                    <span class="coin-dot" style="background:{meta['color']};"></span>
-                    {meta['symbol']}
-                    <span style="color:#475569; font-weight:400;">·</span>
-                    <span style="color:#64748B; font-weight:500;">{meta['name']}</span>
-                    {"&nbsp;<span style='font-size:10px; font-weight:700; letter-spacing:1.5px; color:" + meta['color'] + "; opacity:0.8;'>SELECTED</span>" if is_sel else ""}
+    if prices and coin_id in prices:
+        p     = prices[coin_id]
+        price = p.get("usd")
+        chg   = p.get("usd_24h_change")
+        mcap  = p.get("usd_market_cap")
+        vol   = p.get("usd_24h_vol")
+        st.markdown(f"""
+        <div class="price-card" style="--accent:{meta['color']}; {highlight_css}">
+            <div class="coin-label" style="color:{meta['color']};">
+                <span class="coin-dot" style="background:{meta['color']};"></span>
+                {meta['symbol']}
+                <span style="color:#475569; font-weight:400;">·</span>
+                <span style="color:#64748B; font-weight:500;">{meta['name']}</span>
+                {selected_badge}
+            </div>
+            <div class="coin-price">{fmt_price(price)}</div>
+            <div style="margin: 4px 0 0 0;">
+                {change_badge(chg)}
+                <span style="color:#475569; font-size:13px; margin-left:6px;">24h change</span>
+            </div>
+            <div class="sub-grid">
+                <div>
+                    <div class="sub-item-label">Market Cap</div>
+                    <div class="sub-item-value">{fmt_usd(mcap)}</div>
                 </div>
-                <div class="coin-price">{fmt_price(price)}</div>
-                <div style="margin: 4px 0 0 0;">
-                    {change_badge(chg)}
-                    <span style="color:#475569; font-size:13px; margin-left:6px;">24h change</span>
-                </div>
-                <div class="sub-grid">
-                    <div>
-                        <div class="sub-item-label">Market Cap</div>
-                        <div class="sub-item-value">{fmt_usd(mcap)}</div>
-                    </div>
-                    <div>
-                        <div class="sub-item-label">Volume 24h</div>
-                        <div class="sub-item-value">{fmt_usd(vol)}</div>
-                    </div>
+                <div>
+                    <div class="sub-item-label">Volume 24h</div>
+                    <div class="sub-item-value">{fmt_usd(vol)}</div>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class="price-card" style="--accent:#334155;">
-                <div class="coin-label" style="color:#475569;">
-                    <span class="coin-dot" style="background:{meta['color']};"></span>
-                    {meta['symbol']} · {meta['name']}
-                </div>
-                <div class="coin-price" style="color:#334155; font-size:32px;">
-                    Data unavailable
-                </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class="price-card" style="--accent:#334155;">
+            <div class="coin-label" style="color:#475569;">
+                <span class="coin-dot" style="background:{meta['color']};"></span>
+                {meta['symbol']} · {meta['name']}
             </div>
-            """, unsafe_allow_html=True)
+            <div class="coin-price" style="color:#334155; font-size:32px;">
+                Data unavailable
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # Sparkline
-        df    = charts.get(coin_id)
-        spark = make_sparkline(df, meta["color"])
-        if spark:
-            st.plotly_chart(spark, use_container_width=True,
-                            config={"displayModeBar": False})
+    df    = charts.get(coin_id)
+    spark = make_sparkline(df, meta["color"])
+    if spark:
+        st.plotly_chart(spark, use_container_width=True,
+                        config={"displayModeBar": False})
+
+# Render 3 cards per row — fresh st.columns() each row avoids the re-entered
+# column context bug that causes HTML to render as escaped text on rows 2 and 3.
+for row_start in range(0, len(_ordered_coins), 3):
+    row_coins = _ordered_coins[row_start:row_start + 3]
+    row_cols  = st.columns(3, gap="large")
+    for col, (coin_id, meta) in zip(row_cols, row_coins):
+        with col:
+            _render_price_card(coin_id, meta, prices, charts, selected_coin)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 7-DAY PRICE HISTORY CHARTS
@@ -1233,38 +1242,41 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# All 9 coins in a 3-col grid; selected coin first, with highlighted border
+# All 9 coins in a 3-col grid; selected coin first, with highlighted border.
+# Fresh st.columns() per row — avoids the re-entered column context rendering bug.
 _chart_coins = [(selected_coin, COINS[selected_coin])] + [
     (cid, m) for cid, m in COINS.items() if cid != selected_coin
 ]
-ccols = st.columns(3, gap="large")
-for i, (coin_id, meta) in enumerate(_chart_coins):
-    with ccols[i % 3]:
-        df  = charts.get(coin_id)
-        fig = make_price_chart(df, meta)
-        is_sel = (coin_id == selected_coin)
-        wrap_style = (
-            f'border-color:{meta["color"]}55; box-shadow:0 0 0 1px {meta["color"]}33;'
-        ) if is_sel else ""
-        if fig:
-            st.markdown(f'<div class="chart-wrap" style="{wrap_style}">',
-                        unsafe_allow_html=True)
-            st.plotly_chart(fig, use_container_width=True,
-                            config={"displayModeBar": False})
-            st.markdown('</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class="oc-tile" style="height:260px; display:flex; flex-direction:column;
-                 align-items:center; justify-content:center; gap:10px; {wrap_style}">
-                <div style="font-size:32px;">📡</div>
-                <div style="color:#475569; font-size:14px; font-weight:600;">
-                    {meta['name']} chart loading…
+for row_start in range(0, len(_chart_coins), 3):
+    row_coins = _chart_coins[row_start:row_start + 3]
+    row_cols  = st.columns(3, gap="large")
+    for col, (coin_id, meta) in zip(row_cols, row_coins):
+        with col:
+            df  = charts.get(coin_id)
+            fig = make_price_chart(df, meta)
+            is_sel     = (coin_id == selected_coin)
+            wrap_style = (
+                f'border-color:{meta["color"]}55; box-shadow:0 0 0 1px {meta["color"]}33;'
+            ) if is_sel else ""
+            if fig:
+                st.markdown(f'<div class="chart-wrap" style="{wrap_style}">',
+                            unsafe_allow_html=True)
+                st.plotly_chart(fig, use_container_width=True,
+                                config={"displayModeBar": False})
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="oc-tile" style="height:260px; display:flex; flex-direction:column;
+                     align-items:center; justify-content:center; gap:10px; {wrap_style}">
+                    <div style="font-size:32px;">📡</div>
+                    <div style="color:#475569; font-size:14px; font-weight:600;">
+                        {meta['name']} chart loading…
+                    </div>
+                    <div style="color:#334155; font-size:12px;">
+                        CoinGecko rate limit — refreshes in 5 min
+                    </div>
                 </div>
-                <div style="color:#334155; font-size:12px;">
-                    CoinGecko rate limit — refreshes in 5 min
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SENTIMENT & ON-CHAIN  (right panel responds to selected asset)
