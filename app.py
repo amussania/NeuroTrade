@@ -581,8 +581,8 @@ def make_sparkline(df, color):
     ))
     fig.update_layout(
         margin=dict(l=0, r=0, t=0, b=0),
-        paper_bgcolor="#1E293B",
-        plot_bgcolor="#1E293B",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
         xaxis=dict(visible=False),
         yaxis=dict(visible=False),
         showlegend=False,
@@ -615,8 +615,8 @@ def make_price_chart(df, meta):
     ))
 
     fig.update_layout(
-        paper_bgcolor="#1a2744",
-        plot_bgcolor="#1a2744",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=16, r=16, t=48, b=16),
         height=260,
         showlegend=False,
@@ -633,7 +633,7 @@ def make_price_chart(df, meta):
         ),
         xaxis=dict(
             showgrid=True,
-            gridcolor="#243656",
+            gridcolor="#E2E8F0",
             gridwidth=1,
             showline=False,
             zeroline=False,
@@ -642,7 +642,7 @@ def make_price_chart(df, meta):
         ),
         yaxis=dict(
             showgrid=True,
-            gridcolor="#243656",
+            gridcolor="#E2E8F0",
             gridwidth=1,
             showline=False,
             zeroline=False,
