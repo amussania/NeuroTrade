@@ -415,10 +415,11 @@ div[data-testid="stForm"] {
 </style>
 """, unsafe_allow_html=True)
 
-# ── Auto-refresh every 5 minutes ─────────────────────────────────────────────
+# ── Auto-refresh: 1 s tick drives the countdown timer; cached data re-fetches
+# ── only when TTLs expire (600 s), so the frequent reruns are lightweight.
 try:
     from streamlit_autorefresh import st_autorefresh
-    st_autorefresh(interval=5 * 60 * 1000, key="neurotrade_refresh")
+    st_autorefresh(interval=1000, key="neurotrade_tick")
 except ImportError:
     pass
 
@@ -838,7 +839,13 @@ with col_logo:
     """, unsafe_allow_html=True)
 
 with col_ts:
-    now = datetime.utcnow().strftime("%H:%M:%S UTC")
+    now      = datetime.utcnow().strftime("%H:%M:%S UTC")
+    elapsed  = int(time.time()) % 300
+    remaining = 300 - elapsed
+    mins     = remaining // 60
+    secs     = remaining % 60
+    timer_color = "#10B981" if remaining <= 30 else "#475569"
+
     hdr_c1, hdr_c2 = st.columns([2, 1])
     with hdr_c1:
         st.markdown(f"""
@@ -851,24 +858,10 @@ with col_ts:
             </div>
             <div style="color:#475569; font-size:12px;">{now}</div>
             <div style="color:#334155; font-size:11px; margin-top:2px;">Auto-refresh: 5 min</div>
-            <div id="nt-cd" style="font-size:11px;margin-top:2px;color:#475569;">Next refresh in 5:00</div>
+            <div style="font-size:11px; margin-top:2px; color:{timer_color};">
+                Next refresh in {mins}:{secs:02d}
+            </div>
         </div>
-        """, unsafe_allow_html=True)
-        # Script in a separate plain string — keeps JS curly braces away from the f-string parser
-        st.markdown("""
-        <script>
-        (function(){
-        var r=300;
-        function t(){r--;
-        var el=document.getElementById('nt-cd');
-        if(!el)return;
-        if(r<=0){el.textContent='Refreshing...';r=300;}
-        else{var m=Math.floor(r/60),s=r%60,c=r<=30?'#10B981':'#475569';
-        el.innerHTML='<span style="color:'+c+'">Next refresh in '
-        +m+':'+(s<10?'0':'')+s+'</span>';}
-        setTimeout(t,1000);}
-        setTimeout(t,1000);})();
-        </script>
         """, unsafe_allow_html=True)
     with hdr_c2:
         st.markdown("<div style='padding-top:18px;'>", unsafe_allow_html=True)
@@ -923,12 +916,13 @@ if st.session_state.theme == 'light':
         border-color: rgba(0,180,220,0.2) !important;
     }
     .waitlist-counter-label { color: #475569 !important; }
-    button[aria-label="Bitcoin (BTC)"],
-    button[aria-label="Ethereum (ETH)"],
-    button[aria-label="Solana (SOL)"] {
-        border-color: #94A3B8 !important;
-        color: #374151 !important;
+    div[data-testid="stSelectbox"] > div > div {
+        background: #FFFFFF !important;
+        border-color: #CBD5E1 !important;
+        color: #1A202C !important;
     }
+    div[data-testid="stSelectbox"] > div > div > div { color: #1A202C !important; }
+    div[data-testid="stSelectbox"] svg { fill: #64748B !important; }
     .intel-comp-bar-fill + div, [style*="color:#334155"] {
         color: #64748B !important;
     }
@@ -942,81 +936,47 @@ st.markdown('<div class="section-header">Combined Intelligence Score</div>',
             unsafe_allow_html=True)
 
 # ── Asset selector ────────────────────────────────────────────────────────────
-# Uses st.button + st.session_state so clicks trigger a rerun (not a page
-# reload), which preserves all session state including the theme setting.
-ASSET_OPTIONS_ROW1 = {"Bitcoin (BTC)": "bitcoin", "Ethereum (ETH)": "ethereum", "Solana (SOL)": "solana"}
-ASSET_OPTIONS_ROW2 = {
-    "XRP":  "ripple",
-    "ADA":  "cardano",
-    "AVAX": "avalanche-2",
-    "DOGE": "dogecoin",
-    "DOT":  "polkadot",
-    "LINK": "chainlink",
-}
 ASSET_COLORS = {cid: meta["color"] for cid, meta in COINS.items()}
 
 if st.session_state.selected_asset not in ASSET_COLORS:
     st.session_state.selected_asset = 'bitcoin'
-selected_coin = st.session_state.selected_asset
 
-# Inject primary button color to match the selected asset BEFORE rendering buttons.
-active_color = ASSET_COLORS[selected_coin]
+# Style the selectbox to match the dashboard aesthetic
 st.markdown(f"""
 <style>
-/* Override Streamlit primary button color to selected asset color */
-button[kind="primary"] {{
-    background: {active_color} !important;
-    border-color: {active_color} !important;
-    color: #FFFFFF !important;
-    font-weight: 700 !important;
-    border-radius: 999px !important;
-}}
-button[kind="primary"]:hover {{
-    background: {active_color} !important;
-    border-color: {active_color} !important;
-    opacity: 0.88;
-}}
-/* Asset selector base pill style (secondary / inactive) */
-div[data-testid="stHorizontalBlock"] button[kind="secondary"] {{
-    border-radius: 999px !important;
-    padding: 10px 16px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    width: 100% !important;
-    box-shadow: none !important;
-    background: transparent !important;
+div[data-testid="stSelectbox"] > div > div {{
+    background: #1E293B !important;
     border: 1.5px solid #334155 !important;
-    color: #94A3B8 !important;
-    transition: border-color 0.15s ease !important;
-}}
-div[data-testid="stHorizontalBlock"] button[kind="secondary"]:hover {{
-    border-color: #475569 !important;
+    border-radius: 12px !important;
     color: #CBD5E1 !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}}
+div[data-testid="stSelectbox"] > div > div:hover {{
+    border-color: #475569 !important;
+}}
+div[data-testid="stSelectbox"] > div > div > div {{
+    color: #CBD5E1 !important;
+}}
+div[data-testid="stSelectbox"] svg {{
+    fill: #64748B !important;
 }}
 </style>
 """, unsafe_allow_html=True)
 
-# Row 1: BTC · ETH · SOL
-btn_row1 = st.columns([1, 1, 1, 3], gap="small")
-for col, (lbl, coin_id) in zip(btn_row1, ASSET_OPTIONS_ROW1.items()):
-    with col:
-        btn_type = "primary" if coin_id == selected_coin else "secondary"
-        if st.button(lbl, key=f"asset_btn_{coin_id}",
-                     type=btn_type, use_container_width=True):
-            st.session_state.selected_asset = coin_id
-            st.rerun()
+sel_col, _ = st.columns([2, 5])
+with sel_col:
+    selected_coin = st.selectbox(
+        "Select Asset",
+        options=list(COINS.keys()),
+        format_func=lambda x: f"{COINS[x]['symbol']} · {COINS[x]['name']}",
+        index=list(COINS.keys()).index(st.session_state.selected_asset),
+        label_visibility="collapsed",
+        key="asset_selectbox",
+    )
+st.session_state.selected_asset = selected_coin
 
-# Row 2: XRP · ADA · AVAX · DOGE · DOT · LINK
-btn_row2 = st.columns(6, gap="small")
-for col, (lbl, coin_id) in zip(btn_row2, ASSET_OPTIONS_ROW2.items()):
-    with col:
-        btn_type = "primary" if coin_id == selected_coin else "secondary"
-        if st.button(lbl, key=f"asset_btn_{coin_id}",
-                     type=btn_type, use_container_width=True):
-            st.session_state.selected_asset = coin_id
-            st.rerun()
-
-st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
 
 selected_meta = COINS[selected_coin]
 asset_color   = ASSET_COLORS[selected_coin]
