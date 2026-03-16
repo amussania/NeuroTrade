@@ -927,13 +927,26 @@ if st.session_state.theme == 'light':
     .chart-wrap { background: #FFFFFF !important; }
 
     /* Dropdown selector */
-    div[data-testid="stSelectbox"] > div > div {
-        background: #FFFFFF !important;
+    [data-testid="stSelectbox"] > div > div {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
         border-color: #CBD5E1 !important;
-        color: #1A202C !important;
     }
-    div[data-testid="stSelectbox"] > div > div > div { color: #1A202C !important; }
-    div[data-testid="stSelectbox"] svg { fill: #64748B !important; }
+    [data-testid="stSelectbox"] > div > div > div { color: #0F172A !important; }
+    [data-testid="stSelectbox"] svg { fill: #0F172A !important; }
+    [data-baseweb="select"] * {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+    }
+    [data-baseweb="popover"] * {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+    }
+    li[role="option"] {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+    }
+    li[role="option"]:hover { background-color: #F1F5F9 !important; }
     div[data-baseweb="select"] {
         background: #FFFFFF !important;
         border-color: #CBD5E1 !important;
