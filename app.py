@@ -423,9 +423,15 @@ except ImportError:
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 COINS = {
-    "bitcoin":  {"name": "Bitcoin",  "symbol": "BTC", "color": "#F7931A"},
-    "ethereum": {"name": "Ethereum", "symbol": "ETH", "color": "#627EEA"},
-    "solana":   {"name": "Solana",   "symbol": "SOL", "color": "#9945FF"},
+    "bitcoin":       {"name": "Bitcoin",   "symbol": "BTC",  "color": "#F7931A"},
+    "ethereum":      {"name": "Ethereum",  "symbol": "ETH",  "color": "#627EEA"},
+    "solana":        {"name": "Solana",    "symbol": "SOL",  "color": "#9945FF"},
+    "ripple":        {"name": "XRP",       "symbol": "XRP",  "color": "#00AAE4"},
+    "cardano":       {"name": "Cardano",   "symbol": "ADA",  "color": "#0033AD"},
+    "avalanche-2":   {"name": "Avalanche", "symbol": "AVAX", "color": "#E84142"},
+    "dogecoin":      {"name": "Dogecoin",  "symbol": "DOGE", "color": "#C2A633"},
+    "polkadot":      {"name": "Polkadot",  "symbol": "DOT",  "color": "#E6007A"},
+    "chainlink":     {"name": "Chainlink", "symbol": "LINK", "color": "#2A5ADA"},
 }
 
 BG_CARD  = "#1E293B"
@@ -470,9 +476,9 @@ def fng_text(v):
     return "Extreme Greed"
 
 # ── Data fetching ─────────────────────────────────────────────────────────────
-HEADERS = {"Accept": "application/json", "User-Agent": "NeuroTrade/1.0"}
+HEADERS = {"Accept": "application/json", "User-Agent": "NeuroTrade/1.0 (contact@neurotrade.ai)"}
 
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=600, show_spinner=False)
 def fetch_prices():
     ids = ",".join(COINS.keys())
     url = (
@@ -505,7 +511,37 @@ def fetch_onchain():
     except Exception:
         return None
 
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=600, show_spinner=False)
+def fetch_eth_onchain():
+    """ETH gas prices + USD price from Etherscan gas oracle."""
+    try:
+        r = requests.get(
+            "https://api.etherscan.io/api?module=gastracker&action=gasoracle",
+            timeout=10, headers=HEADERS,
+        )
+        r.raise_for_status()
+        data = r.json()
+        if data.get("status") == "1" and "result" in data:
+            # result keys: SafeGasPrice, ProposeGasPrice, FastGasPrice, suggestBaseFee, UsdPrice
+            return data["result"]
+        return None
+    except Exception:
+        return None
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_google_trends(keyword: str):
+    try:
+        from pytrends.request import TrendReq
+        pt = TrendReq(hl="en-US", tz=0, timeout=(10, 25))
+        pt.build_payload([keyword], timeframe="now 7-d")
+        df = pt.interest_over_time()
+        if df is None or df.empty or keyword not in df.columns:
+            return None
+        return df[keyword].tolist()
+    except Exception:
+        return None
+
+@st.cache_data(ttl=600, show_spinner=False)
 def fetch_chart(coin_id: str):
     # Free CoinGecko tier: days=7 auto-returns hourly data; no interval param needed
     url = (
@@ -770,10 +806,11 @@ def score_meta(score):
 
 # ── FETCH ALL DATA ────────────────────────────────────────────────────────────
 with st.spinner("Loading market data…"):
-    prices  = fetch_prices()
-    fng     = fetch_fear_greed()
-    onchain = fetch_onchain()
-    charts  = {cid: fetch_chart(cid) for cid in COINS}
+    prices      = fetch_prices()
+    fng         = fetch_fear_greed()
+    onchain     = fetch_onchain()
+    eth_onchain = fetch_eth_onchain()
+    charts      = {cid: fetch_chart(cid) for cid in COINS}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HEADER
@@ -810,7 +847,24 @@ with col_ts:
             </div>
             <div style="color:#475569; font-size:12px;">{now}</div>
             <div style="color:#334155; font-size:11px; margin-top:2px;">Auto-refresh: 5 min</div>
+            <div id="nt-cd" style="font-size:11px;margin-top:2px;color:#475569;">Next refresh in 5:00</div>
         </div>
+        """, unsafe_allow_html=True)
+        # Script in a separate plain string — keeps JS curly braces away from the f-string parser
+        st.markdown("""
+        <script>
+        (function(){
+        var r=300;
+        function t(){r--;
+        var el=document.getElementById('nt-cd');
+        if(!el)return;
+        if(r<=0){el.textContent='Refreshing...';r=300;}
+        else{var m=Math.floor(r/60),s=r%60,c=r<=30?'#10B981':'#475569';
+        el.innerHTML='<span style="color:'+c+'">Next refresh in '
+        +m+':'+(s<10?'0':'')+s+'</span>';}
+        setTimeout(t,1000);}
+        setTimeout(t,1000);})();
+        </script>
         """, unsafe_allow_html=True)
     with hdr_c2:
         st.markdown("<div style='padding-top:18px;'>", unsafe_allow_html=True)
@@ -886,15 +940,22 @@ st.markdown('<div class="section-header">Combined Intelligence Score</div>',
 # ── Asset selector ────────────────────────────────────────────────────────────
 # Uses st.button + st.session_state so clicks trigger a rerun (not a page
 # reload), which preserves all session state including the theme setting.
-ASSET_OPTIONS = {"Bitcoin (BTC)": "bitcoin", "Ethereum (ETH)": "ethereum", "Solana (SOL)": "solana"}
-ASSET_COLORS  = {"bitcoin": "#F7931A", "ethereum": "#627EEA", "solana": "#9945FF"}
+ASSET_OPTIONS_ROW1 = {"Bitcoin (BTC)": "bitcoin", "Ethereum (ETH)": "ethereum", "Solana (SOL)": "solana"}
+ASSET_OPTIONS_ROW2 = {
+    "XRP":  "ripple",
+    "ADA":  "cardano",
+    "AVAX": "avalanche-2",
+    "DOGE": "dogecoin",
+    "DOT":  "polkadot",
+    "LINK": "chainlink",
+}
+ASSET_COLORS = {cid: meta["color"] for cid, meta in COINS.items()}
 
 if st.session_state.selected_asset not in ASSET_COLORS:
     st.session_state.selected_asset = 'bitcoin'
 selected_coin = st.session_state.selected_asset
 
 # Inject primary button color to match the selected asset BEFORE rendering buttons.
-# type="primary" on the active button + this CSS override = guaranteed coin-color fill.
 active_color = ASSET_COLORS[selected_coin]
 st.markdown(f"""
 <style>
@@ -914,8 +975,8 @@ button[kind="primary"]:hover {{
 /* Asset selector base pill style (secondary / inactive) */
 div[data-testid="stHorizontalBlock"] button[kind="secondary"] {{
     border-radius: 999px !important;
-    padding: 10px 28px !important;
-    font-size: 14px !important;
+    padding: 10px 16px !important;
+    font-size: 13px !important;
     font-weight: 600 !important;
     width: 100% !important;
     box-shadow: none !important;
@@ -931,11 +992,21 @@ div[data-testid="stHorizontalBlock"] button[kind="secondary"]:hover {{
 </style>
 """, unsafe_allow_html=True)
 
-btn_cols = st.columns([1, 1, 1, 3], gap="small")
-for col, (lbl, coin_id) in zip(btn_cols, ASSET_OPTIONS.items()):
+# Row 1: BTC · ETH · SOL
+btn_row1 = st.columns([1, 1, 1, 3], gap="small")
+for col, (lbl, coin_id) in zip(btn_row1, ASSET_OPTIONS_ROW1.items()):
     with col:
-        active   = (coin_id == selected_coin)
-        btn_type = "primary" if active else "secondary"
+        btn_type = "primary" if coin_id == selected_coin else "secondary"
+        if st.button(lbl, key=f"asset_btn_{coin_id}",
+                     type=btn_type, use_container_width=True):
+            st.session_state.selected_asset = coin_id
+            st.rerun()
+
+# Row 2: XRP · ADA · AVAX · DOGE · DOT · LINK
+btn_row2 = st.columns(6, gap="small")
+for col, (lbl, coin_id) in zip(btn_row2, ASSET_OPTIONS_ROW2.items()):
+    with col:
+        btn_type = "primary" if coin_id == selected_coin else "secondary"
         if st.button(lbl, key=f"asset_btn_{coin_id}",
                      type=btn_type, use_container_width=True):
             st.session_state.selected_asset = coin_id
@@ -1082,9 +1153,20 @@ else:
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown('<div class="section-header">Market Prices</div>', unsafe_allow_html=True)
 
+# Selected coin first, then the rest in original order
+_ordered_coins = [(selected_coin, COINS[selected_coin])] + [
+    (cid, m) for cid, m in COINS.items() if cid != selected_coin
+]
+
 pcols = st.columns(3, gap="large")
-for i, (coin_id, meta) in enumerate(COINS.items()):
-    with pcols[i]:
+for i, (coin_id, meta) in enumerate(_ordered_coins):
+    with pcols[i % 3]:
+        is_sel         = (coin_id == selected_coin)
+        highlight_css  = (
+            f"box-shadow:0 0 0 2px {meta['color']}66, 0 8px 32px rgba(0,0,0,0.4);"
+            f"border-color:{meta['color']}99;"
+        ) if is_sel else ""
+
         if prices and coin_id in prices:
             p     = prices[coin_id]
             price = p.get("usd")
@@ -1093,12 +1175,13 @@ for i, (coin_id, meta) in enumerate(COINS.items()):
             vol   = p.get("usd_24h_vol")
 
             st.markdown(f"""
-            <div class="price-card" style="--accent:{meta['color']};">
+            <div class="price-card" style="--accent:{meta['color']}; {highlight_css}">
                 <div class="coin-label" style="color:{meta['color']};">
                     <span class="coin-dot" style="background:{meta['color']};"></span>
                     {meta['symbol']}
                     <span style="color:#475569; font-weight:400;">·</span>
                     <span style="color:#64748B; font-weight:500;">{meta['name']}</span>
+                    {"&nbsp;<span style='font-size:10px; font-weight:700; letter-spacing:1.5px; color:" + meta['color'] + "; opacity:0.8;'>SELECTED</span>" if is_sel else ""}
                 </div>
                 <div class="coin-price">{fmt_price(price)}</div>
                 <div style="margin: 4px 0 0 0;">
@@ -1140,22 +1223,35 @@ for i, (coin_id, meta) in enumerate(COINS.items()):
 # ═══════════════════════════════════════════════════════════════════════════════
 # 7-DAY PRICE HISTORY CHARTS
 # ═══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-header">7-Day Price History</div>', unsafe_allow_html=True)
+st.markdown(
+    f'<div class="section-header">7-Day Price History &nbsp;·&nbsp; '
+    f'<span style="color:{asset_color};">{selected_meta["name"]}</span></div>',
+    unsafe_allow_html=True,
+)
 
+# All 9 coins in a 3-col grid; selected coin first, with highlighted border
+_chart_coins = [(selected_coin, COINS[selected_coin])] + [
+    (cid, m) for cid, m in COINS.items() if cid != selected_coin
+]
 ccols = st.columns(3, gap="large")
-for i, (coin_id, meta) in enumerate(COINS.items()):
-    with ccols[i]:
+for i, (coin_id, meta) in enumerate(_chart_coins):
+    with ccols[i % 3]:
         df  = charts.get(coin_id)
         fig = make_price_chart(df, meta)
+        is_sel = (coin_id == selected_coin)
+        wrap_style = (
+            f'border-color:{meta["color"]}55; box-shadow:0 0 0 1px {meta["color"]}33;'
+        ) if is_sel else ""
         if fig:
-            st.markdown('<div class="chart-wrap">', unsafe_allow_html=True)
+            st.markdown(f'<div class="chart-wrap" style="{wrap_style}">',
+                        unsafe_allow_html=True)
             st.plotly_chart(fig, use_container_width=True,
                             config={"displayModeBar": False})
             st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.markdown(f"""
             <div class="oc-tile" style="height:260px; display:flex; flex-direction:column;
-                 align-items:center; justify-content:center; gap:10px;">
+                 align-items:center; justify-content:center; gap:10px; {wrap_style}">
                 <div style="font-size:32px;">📡</div>
                 <div style="color:#475569; font-size:14px; font-weight:600;">
                     {meta['name']} chart loading…
@@ -1167,16 +1263,19 @@ for i, (coin_id, meta) in enumerate(COINS.items()):
             """, unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# FEAR & GREED + ON-CHAIN
+# SENTIMENT & ON-CHAIN  (right panel responds to selected asset)
 # ═══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-header">Sentiment &amp; On-Chain Metrics</div>',
-            unsafe_allow_html=True)
+st.markdown(
+    f'<div class="section-header">Sentiment &amp; On-Chain Metrics &nbsp;·&nbsp; '
+    f'<span style="color:{asset_color};">{selected_meta["name"]}</span></div>',
+    unsafe_allow_html=True,
+)
 
 left, right = st.columns([1, 2], gap="large")
 
-# ── Fear & Greed ──────────────────────────────────────────────────────────────
+# ── Crypto Market Sentiment (Fear & Greed) — always market-wide ───────────────
 with left:
-    st.markdown('<div class="subsection-label">Fear &amp; Greed Index</div>',
+    st.markdown('<div class="subsection-label">Crypto Market Sentiment</div>',
                 unsafe_allow_html=True)
 
     if fng and "data" in fng and fng["data"]:
@@ -1190,6 +1289,9 @@ with left:
         st.markdown(f"""
         <div class="fng-label-big" style="color:{color};">{label}</div>
         <div class="fng-sub">Today's reading · Score {val}/100</div>
+        <div class="fng-sub" style="margin-top:6px; font-size:11px; color:#64748B;">
+            Market-wide crypto sentiment index
+        </div>
         """, unsafe_allow_html=True)
 
         st.markdown('<div class="subsection-label" style="margin-top:28px;">7-Day History</div>',
@@ -1204,100 +1306,179 @@ with left:
         </div>
         """, unsafe_allow_html=True)
 
-# ── On-Chain Metrics ──────────────────────────────────────────────────────────
-with right:
-    st.markdown('<div class="subsection-label">Bitcoin On-Chain Metrics</div>',
+    # ── Retail Attention ──────────────────────────────────────────────────────
+    st.markdown('<div class="subsection-label" style="margin-top:28px;">Retail Attention</div>',
                 unsafe_allow_html=True)
+    _TRENDS_KW = {"bitcoin": "Bitcoin", "ethereum": "Ethereum", "solana": "Solana"}
+    _trends_data = fetch_google_trends(_TRENDS_KW.get(selected_coin, COINS[selected_coin]["name"]))
+    if _trends_data and len(_trends_data) >= 3:
+        _score = _trends_data[-1]
+        _v     = _trends_data[-3:]
+        if _v[-1] > _v[-3]:
+            _dir, _dir_color = "Rising", "#10B981"
+        elif _v[-1] < _v[-3]:
+            _dir, _dir_color = "Fading", "#EF4444"
+        else:
+            _dir, _dir_color = "Stable", "#94A3B8"
+        st.markdown(f"""
+        <div class="oc-tile">
+            <div class="oc-label">Google Trends · 7-Day Interest</div>
+            <div class="oc-value" style="color:{_dir_color};">{_score}<span class="oc-unit">/100</span></div>
+            <div style="color:{_dir_color}; font-size:12px; font-weight:600; margin-top:4px; letter-spacing:1px;">{_dir}</div>
+        </div>""", unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="oc-tile">
+            <div class="oc-label">Google Trends · 7-Day Interest</div>
+            <div class="oc-value" style="color:#475569; font-size:16px;">Unavailable</div>
+        </div>""", unsafe_allow_html=True)
 
-    if onchain:
-        hash_rate  = onchain.get("hash_rate", 0) / 1e9        # → EH/s
-        difficulty = onchain.get("difficulty", 0) / 1e12      # → Trillion
-        n_tx       = onchain.get("n_tx", 0)
-        blk_time   = onchain.get("minutes_between_blocks", 0)
-        total_btc  = onchain.get("totalbc", 0) / 1e8          # satoshis → BTC
-        trade_vol  = onchain.get("trade_volume_btc", 0)
-        miners_rev = onchain.get("miners_revenue_usd", 0)
-        est_tx_usd = onchain.get("estimated_transaction_volume_usd", 0)
-        market_px  = onchain.get("market_price_usd", 0)
+# ── On-Chain panel — switches by selected asset ───────────────────────────────
+with right:
 
-        tiles = [
-            ("Hash Rate",           f"{hash_rate:.2f}",    "EH/s"),
-            ("Mining Difficulty",   f"{difficulty:.2f}T",  ""),
-            ("Transactions Today",  f"{n_tx:,}",           ""),
-            ("Avg Block Time",      f"{blk_time:.1f}",     "min"),
-            ("BTC Circulating",     f"{total_btc:,.0f}",   "BTC"),
-            ("Trade Volume",        f"{trade_vol:,.1f}",   "BTC"),
-        ]
+    if selected_coin == "bitcoin":
+        st.markdown('<div class="subsection-label">Bitcoin On-Chain Metrics</div>',
+                    unsafe_allow_html=True)
 
-        r1, r2 = st.columns(3, gap="medium"), None
-        r2      = st.columns(3, gap="medium")
-        grids   = list(r1) + list(r2)
+        if onchain:
+            hash_rate  = onchain.get("hash_rate", 0) / 1e9
+            difficulty = onchain.get("difficulty", 0) / 1e12
+            n_tx       = onchain.get("n_tx", 0)
+            blk_time   = onchain.get("minutes_between_blocks", 0)
+            total_btc  = onchain.get("totalbc", 0) / 1e8
+            trade_vol  = onchain.get("trade_volume_btc", 0)
+            est_tx_usd = onchain.get("estimated_transaction_volume_usd", 0)
+            market_px  = onchain.get("market_price_usd", 0)
 
-        for (label, value, unit), col in zip(tiles, grids):
-            with col:
+            tiles = [
+                ("Hash Rate",          f"{hash_rate:.2f}",   "EH/s"),
+                ("Mining Difficulty",  f"{difficulty:.2f}T", ""),
+                ("Transactions Today", f"{n_tx:,}",          ""),
+                ("Avg Block Time",     f"{blk_time:.1f}",    "min"),
+                ("BTC Circulating",    f"{total_btc:,.0f}",  "BTC"),
+                ("Trade Volume",       f"{trade_vol:,.1f}",  "BTC"),
+            ]
+
+            r1 = st.columns(3, gap="medium")
+            r2 = st.columns(3, gap="medium")
+            for (lbl, val, unit), col in zip(tiles, list(r1) + list(r2)):
+                with col:
+                    st.markdown(f"""
+                    <div class="oc-tile">
+                        <div class="oc-label">{lbl}</div>
+                        <div class="oc-value">{val}<span class="oc-unit">{unit}</span></div>
+                    </div>""", unsafe_allow_html=True)
+                    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
+            w1, w2 = st.columns(2, gap="medium")
+            with w1:
+                if n_tx > 400_000:
+                    nh_label, nh_color = "HIGH",   "#10B981"
+                elif n_tx > 200_000:
+                    nh_label, nh_color = "MEDIUM", "#F97316"
+                else:
+                    nh_label, nh_color = "LOW",    "#EF4444"
                 st.markdown(f"""
                 <div class="oc-tile">
-                    <div class="oc-label">{label}</div>
-                    <div class="oc-value">
-                        {value}
-                        <span class="oc-unit">{unit}</span>
+                    <div class="oc-label">Network Health</div>
+                    <div class="oc-value" style="color:{nh_color};">{nh_label}
+                        <span class="oc-unit" style="color:{nh_color}88;">based on {n_tx:,} tx/day</span>
                     </div>
-                </div>
-                """, unsafe_allow_html=True)
-                st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+                </div>""", unsafe_allow_html=True)
+            with w2:
+                st.markdown(f"""
+                <div class="oc-tile">
+                    <div class="oc-label">Est. Transaction Volume (24h)</div>
+                    <div class="oc-value">{fmt_usd(est_tx_usd)}<span class="oc-unit">USD</span></div>
+                </div>""", unsafe_allow_html=True)
 
-        # Wide USD tiles
-        w1, w2 = st.columns(2, gap="medium")
-        with w1:
-            if n_tx > 400_000:
-                nh_label, nh_color = "HIGH",   "#10B981"
-            elif n_tx > 200_000:
-                nh_label, nh_color = "MEDIUM", "#F97316"
-            else:
-                nh_label, nh_color = "LOW",    "#EF4444"
-            st.markdown(f"""
-            <div class="oc-tile">
-                <div class="oc-label">Network Health</div>
-                <div class="oc-value" style="color:{nh_color};">{nh_label}
-                    <span class="oc-unit" style="color:{nh_color}88;">based on {n_tx:,} tx/day</span>
-                </div>
+            if market_px:
+                st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div style="background:#162032; border:1px solid #334155; border-radius:16px;
+                            padding:20px 28px; display:flex; align-items:center; justify-content:space-between;">
+                    <div>
+                        <div style="color:#64748B; font-size:11px; font-weight:700;
+                                    letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;">
+                            BTC Reference Price · Blockchain.com
+                        </div>
+                        <div style="color:#94A3B8; font-size:13px;">
+                            Independent price feed for cross-reference
+                        </div>
+                    </div>
+                    <div style="color:#F7931A; font-size:32px; font-weight:800; letter-spacing:-1px;">
+                        ${market_px:,.2f}
+                    </div>
+                </div>""", unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="oc-tile" style="text-align:center; padding:60px 24px; color:#475569;">
+                <div style="font-size:28px; margin-bottom:8px;">⛓️</div>
+                <div style="font-size:14px;">Blockchain data unavailable</div>
             </div>""", unsafe_allow_html=True)
-        with w2:
+
+    elif selected_coin == "ethereum":
+        st.markdown('<div class="subsection-label">Ethereum Network Metrics</div>',
+                    unsafe_allow_html=True)
+        # eth_onchain returns the "result" dict (SafeGasPrice, ProposeGasPrice, FastGasPrice, UsdPrice)
+        if eth_onchain and eth_onchain.get("SafeGasPrice"):
+            res = eth_onchain
+            eth_tiles = [
+                ("Safe Gas Price",    f"{res.get('SafeGasPrice', '—')}",    "Gwei"),
+                ("Standard Gas Price",f"{res.get('ProposeGasPrice', '—')}", "Gwei"),
+                ("Fast Gas Price",    f"{res.get('FastGasPrice', '—')}",    "Gwei"),
+                ("ETH/USD Price",     f"${float(res.get('UsdPrice', 0)):,.2f}", ""),
+            ]
+            r1 = st.columns(4, gap="medium")
+            for (label, value, unit), col in zip(eth_tiles, r1):
+                with col:
+                    st.markdown(f"""
+                    <div class="oc-tile">
+                        <div class="oc-label">{label}</div>
+                        <div class="oc-value">{value}
+                            <span class="oc-unit">{unit}</span>
+                        </div>
+                    </div>""", unsafe_allow_html=True)
+                    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        if prices and "ethereum" in prices:
+            p = prices["ethereum"]
             st.markdown(f"""
-            <div class="oc-tile">
-                <div class="oc-label">Est. Transaction Volume (24h)</div>
-                <div class="oc-value">{fmt_usd(est_tx_usd)}
+            <div class="oc-tile" style="margin-top:8px;">
+                <div class="oc-label">Market Cap</div>
+                <div class="oc-value">{fmt_usd(p.get("usd_market_cap"))}
                     <span class="oc-unit">USD</span>
                 </div>
             </div>""", unsafe_allow_html=True)
 
-        if market_px:
-            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-            st.markdown(f"""
-            <div style="background:#162032; border:1px solid #334155; border-radius:16px;
-                        padding:20px 28px; display:flex; align-items:center; justify-content:space-between;">
-                <div>
-                    <div style="color:#64748B; font-size:11px; font-weight:700;
-                                letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;">
-                        BTC Reference Price · Blockchain.com
-                    </div>
-                    <div style="color:#94A3B8; font-size:13px;">
-                        Independent price feed for cross-reference
-                    </div>
-                </div>
-                <div style="color:#F7931A; font-size:32px; font-weight:800;
-                            letter-spacing:-1px;">
-                    ${market_px:,.2f}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
+    elif selected_coin == "solana":
+        st.markdown('<div class="subsection-label">Solana Network Metrics</div>',
+                    unsafe_allow_html=True)
+        if prices and "solana" in prices:
+            p = prices["solana"]
+            sol_tiles = [
+                ("SOL Price",  fmt_price(p.get("usd")),              "USD"),
+                ("24h Change", f"{p.get('usd_24h_change', 0):.2f}%", ""),
+                ("Market Cap", fmt_usd(p.get("usd_market_cap")),     ""),
+                ("24h Volume", fmt_usd(p.get("usd_24h_vol")),        ""),
+            ]
+            r1 = st.columns(4, gap="medium")
+            for (label, value, unit), col in zip(sol_tiles, r1):
+                with col:
+                    st.markdown(f"""
+                    <div class="oc-tile">
+                        <div class="oc-label">{label}</div>
+                        <div class="oc-value">{value}
+                            <span class="oc-unit">{unit}</span>
+                        </div>
+                    </div>""", unsafe_allow_html=True)
+                    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
         st.markdown("""
-        <div class="oc-tile" style="text-align:center; padding:60px 24px; color:#475569;">
-            <div style="font-size:28px; margin-bottom:8px;">⛓️</div>
-            <div style="font-size:14px;">Blockchain data unavailable</div>
-        </div>
-        """, unsafe_allow_html=True)
+        <div class="oc-tile" style="margin-top:8px; opacity:0.6;">
+            <div class="oc-label">Full On-Chain Data</div>
+            <div class="oc-value" style="font-size:16px; color:#64748B;">
+                Coming soon
+            </div>
+        </div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WAITLIST
