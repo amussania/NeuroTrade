@@ -531,15 +531,16 @@ def fetch_eth_onchain():
         return None
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def fetch_google_trends(keyword: str):
+def fetch_trending():
     try:
-        from pytrends.request import TrendReq
-        pt = TrendReq(hl="en-US", tz=0, timeout=(10, 25))
-        pt.build_payload([keyword], timeframe="now 7-d")
-        df = pt.interest_over_time()
-        if df is None or df.empty or keyword not in df.columns:
-            return None
-        return df[keyword].tolist()
+        r = requests.get(
+            "https://api.coingecko.com/api/v3/search/trending",
+            timeout=10, headers=HEADERS,
+        )
+        r.raise_for_status()
+        data = r.json()
+        # Returns list of coin dicts under data["coins"][*]["item"]["id"]
+        return [c["item"]["id"] for c in data.get("coins", [])]
     except Exception:
         return None
 
@@ -815,6 +816,7 @@ with st.spinner("Loading market data…"):
     fng         = fetch_fear_greed()
     onchain     = fetch_onchain()
     eth_onchain = fetch_eth_onchain()
+    trending    = fetch_trending()
     charts      = {cid: fetch_chart(cid) for cid in COINS}
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1278,42 +1280,39 @@ with left:
         </div>
         """, unsafe_allow_html=True)
 
-    # ── Retail Attention ──────────────────────────────────────────────────────
-    st.markdown('<div class="subsection-label" style="margin-top:28px;">Retail Attention</div>',
+    # ── Trending Status ───────────────────────────────────────────────────────
+    st.markdown('<div class="subsection-label" style="margin-top:28px;">Trending Status</div>',
                 unsafe_allow_html=True)
-    _TRENDS_KW = {
-        "bitcoin":     "Bitcoin",
-        "ethereum":    "Ethereum",
-        "solana":      "Solana",
-        "ripple":      "XRP crypto",
-        "cardano":     "Cardano crypto",
-        "avalanche-2": "Avalanche crypto",
-        "dogecoin":    "Dogecoin",
-        "polkadot":    "Polkadot crypto",
-        "chainlink":   "Chainlink crypto",
-    }
-    _trends_data = fetch_google_trends(_TRENDS_KW.get(selected_coin, COINS[selected_coin]["name"]))
-    if _trends_data and len(_trends_data) >= 3:
-        _score = _trends_data[-1]
-        _v     = _trends_data[-3:]
-        if _v[-1] > _v[-3]:
-            _dir, _dir_color = "Rising", "#10B981"
-        elif _v[-1] < _v[-3]:
-            _dir, _dir_color = "Fading", "#EF4444"
-        else:
-            _dir, _dir_color = "Stable", "#94A3B8"
-        st.markdown(f"""
-        <div class="oc-tile">
-            <div class="oc-label">Google Trends · 7-Day Interest</div>
-            <div class="oc-value" style="color:{_dir_color};">{_score}<span class="oc-unit">/100</span></div>
-            <div style="color:{_dir_color}; font-size:12px; font-weight:600; margin-top:4px; letter-spacing:1px;">{_dir}</div>
-        </div>""", unsafe_allow_html=True)
+    if trending is None:
+        st.markdown(
+            '<div class="oc-tile">'
+            '<div class="oc-label">Trending Status</div>'
+            '<div class="oc-value" style="color:#475569; font-size:16px;">Unavailable</div>'
+            '<div style="color:#475569; font-size:11px; margin-top:6px;">CoinGecko search ranking updated hourly</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+    elif selected_coin in trending:
+        _trend_rank = trending.index(selected_coin) + 1
+        st.markdown(
+            f'<div class="oc-tile">'
+            f'<div class="oc-label">Trending Status</div>'
+            f'<div class="oc-value" style="color:#10B981; font-size:22px; font-weight:800;">🔥 TRENDING</div>'
+            f'<div style="color:#10B981; font-size:12px; font-weight:600; margin-top:4px; letter-spacing:1px;">#{_trend_rank} on CoinGecko right now</div>'
+            f'<div style="color:#475569; font-size:11px; margin-top:6px;">CoinGecko search ranking updated hourly</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
     else:
-        st.markdown("""
-        <div class="oc-tile">
-            <div class="oc-label">Google Trends · 7-Day Interest</div>
-            <div class="oc-value" style="color:#475569; font-size:16px;">Unavailable</div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown(
+            '<div class="oc-tile">'
+            '<div class="oc-label">Trending Status</div>'
+            '<div class="oc-value" style="color:#475569; font-size:22px; font-weight:800;">NOT TRENDING</div>'
+            '<div style="color:#475569; font-size:12px; margin-top:4px;">Not in top 7 searches</div>'
+            '<div style="color:#475569; font-size:11px; margin-top:6px;">CoinGecko search ranking updated hourly</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
 # ── On-Chain panel — switches by selected asset ───────────────────────────────
 with right:
