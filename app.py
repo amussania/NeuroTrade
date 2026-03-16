@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from datetime import datetime
 import csv
 import os
+import time
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -493,7 +494,7 @@ def fetch_prices():
     except Exception:
         return None
 
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=600, show_spinner=False)
 def fetch_fear_greed():
     try:
         r = requests.get("https://api.alternative.me/fng/?limit=8", timeout=10)
@@ -502,7 +503,7 @@ def fetch_fear_greed():
     except Exception:
         return None
 
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=600, show_spinner=False)
 def fetch_onchain():
     try:
         r = requests.get("https://api.blockchain.info/stats", timeout=15)
@@ -544,6 +545,9 @@ def fetch_google_trends(keyword: str):
 @st.cache_data(ttl=600, show_spinner=False)
 def fetch_chart(coin_id: str):
     # Free CoinGecko tier: days=7 auto-returns hourly data; no interval param needed
+    # 1-second delay per call to respect the free-tier rate limit (30 req/min).
+    # Because this function is cached, the sleep only runs on actual API requests.
+    time.sleep(1)
     url = (
         f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
         "?vs_currency=usd&days=7"
