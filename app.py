@@ -598,7 +598,7 @@ def make_price_chart(df, meta):
     trend_color  = "#10B981" if chg >= 0 else "#EF4444"
     arrow        = "▲" if chg >= 0 else "▼"
     line_color   = meta["color"]
-    fill_color   = hex_to_rgba(meta["color"], 0.12)
+    fill_color   = hex_to_rgba(meta["color"], 0.20)
     is_large     = df["price"].mean() > 500
 
     fig = go.Figure()
@@ -607,7 +607,7 @@ def make_price_chart(df, meta):
     fig.add_trace(go.Scatter(
         x=df["ts"], y=df["price"],
         mode="lines",
-        line=dict(color=line_color, width=2.5),
+        line=dict(color=line_color, width=3),
         fill="tozeroy",
         fillcolor=fill_color,
         hovertemplate="<b>$%{y:,.2f}</b><br>%{x|%b %d, %H:%M}<extra></extra>",
@@ -615,8 +615,8 @@ def make_price_chart(df, meta):
     ))
 
     fig.update_layout(
-        paper_bgcolor=BG_CHART,
-        plot_bgcolor=BG_CHART,
+        paper_bgcolor="#1a2744",
+        plot_bgcolor="#1a2744",
         margin=dict(l=16, r=16, t=48, b=16),
         height=260,
         showlegend=False,
@@ -633,7 +633,7 @@ def make_price_chart(df, meta):
         ),
         xaxis=dict(
             showgrid=True,
-            gridcolor="#1E293B",
+            gridcolor="#243656",
             gridwidth=1,
             showline=False,
             zeroline=False,
@@ -642,7 +642,7 @@ def make_price_chart(df, meta):
         ),
         yaxis=dict(
             showgrid=True,
-            gridcolor="#1E293B",
+            gridcolor="#243656",
             gridwidth=1,
             showline=False,
             zeroline=False,
