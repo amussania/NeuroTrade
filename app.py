@@ -883,31 +883,64 @@ if st.session_state.theme == 'light':
     }
     ::-webkit-scrollbar-track { background: #E2E8F0; }
     ::-webkit-scrollbar-thumb { background: #94A3B8; }
+    /* Section headers */
     .section-header {
-        color: #2D3748 !important;
+        color: #1F2937 !important;
         border-bottom-color: #CBD5E1 !important;
     }
     .section-header::before { background: linear-gradient(180deg, #00d4ff, #7c3aed); }
+
+    /* Cards and tiles */
     .price-card, .oc-tile, .intel-card, .chart-wrap, .fng-card {
         background: #FFFFFF !important;
         border-color: #CBD5E1 !important;
     }
     .price-card:hover, .oc-tile:hover { border-color: #94A3B8 !important; }
-    .coin-price, .oc-value, .intel-score-number, .waitlist-headline {
-        color: #1A202C !important;
-    }
+
+    /* Price card */
+    .coin-price { color: #0F172A !important; }
     .coin-label, .subsection-label { color: #2D3748 !important; }
-    .sub-item-label, .oc-label, .intel-comp-label, .fng-sub,
+    .sub-item-label, .oc-label, .fng-sub,
     .oc-unit, .waitlist-urgency { color: #64748B !important; }
-    .sub-item-value, .sub-row span { color: #475569 !important; }
+    .sub-item-value, .sub-row span { color: #374151 !important; }
     .sub-grid { border-top-color: #CBD5E1 !important; }
+
+    /* Intelligence card */
+    .intel-score-number { color: #0F172A !important; }
+    .intel-label { color: #0F172A !important; }
+    .intel-explanation { color: #374151 !important; }
+    .intel-comp-value { color: #1F2937 !important; }
+    .intel-comp-label { color: #4B5563 !important; }
     .intel-bar-track, .intel-comp-bar-track {
         background: #E2E8F0 !important;
         border-color: #CBD5E1 !important;
     }
-    .intel-explanation { color: #475569 !important; }
-    .intel-comp-value { color: #2D3748 !important; }
+    .intel-comp-bar-fill + div, [style*="color:#334155"] { color: #64748B !important; }
+
+    /* On-chain tiles */
+    .oc-value { color: #0F172A !important; }
+
+    /* F&G */
     .fng-label-big { color: inherit; }
+
+    /* Chart area */
+    .chart-wrap { background: #FFFFFF !important; }
+
+    /* Dropdown selector */
+    div[data-testid="stSelectbox"] > div > div {
+        background: #FFFFFF !important;
+        border-color: #CBD5E1 !important;
+        color: #1A202C !important;
+    }
+    div[data-testid="stSelectbox"] > div > div > div { color: #1A202C !important; }
+    div[data-testid="stSelectbox"] svg { fill: #64748B !important; }
+    div[data-baseweb="select"] {
+        background: #FFFFFF !important;
+        border-color: #CBD5E1 !important;
+    }
+    div[data-baseweb="select"] * { color: #0F172A !important; }
+
+    /* Waitlist */
     .waitlist-card {
         background: linear-gradient(135deg, #EBF4FF 0%, #F0E6FF 100%) !important;
         border-color: #CBD5E1 !important;
@@ -922,16 +955,9 @@ if st.session_state.theme == 'light':
     }
     .waitlist-counter-num { color: #0284C7 !important; }
     .waitlist-counter-label { color: #374151 !important; }
-    div[data-testid="stSelectbox"] > div > div {
-        background: #FFFFFF !important;
-        border-color: #CBD5E1 !important;
-        color: #1A202C !important;
-    }
-    div[data-testid="stSelectbox"] > div > div > div { color: #1A202C !important; }
-    div[data-testid="stSelectbox"] svg { fill: #64748B !important; }
-    .intel-comp-bar-fill + div, [style*="color:#334155"] {
-        color: #64748B !important;
-    }
+
+    /* Footer */
+    div[style*="border-top"] span { color: #6B7280 !important; }
     </style>
     """, unsafe_allow_html=True)
 
