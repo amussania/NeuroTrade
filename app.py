@@ -817,7 +817,7 @@ with st.spinner("Loading market data…"):
     onchain     = fetch_onchain()
     eth_onchain = fetch_eth_onchain()
     trending    = fetch_trending()
-    charts      = {cid: fetch_chart(cid) for cid in COINS}
+    charts      = {selected_coin: fetch_chart(selected_coin)}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HEADER
@@ -1133,8 +1133,8 @@ for row_start in range(0, len(_ordered_coins), 3):
         with col:
             is_sel        = (coin_id == selected_coin)
             highlight_css = (
-                f"box-shadow:0 0 0 2px {meta['color']}66, 0 8px 32px rgba(0,0,0,0.4);"
-                f"border-color:{meta['color']}99;"
+                f"box-shadow:0 0 0 2px {meta['color']}, 0 0 24px {meta['color']}55, 0 8px 40px rgba(0,0,0,0.5);"
+                f"border-color:{meta['color']};"
             ) if is_sel else ""
             selected_badge = (
                 f"&nbsp;<span style='font-size:10px; font-weight:700;"
@@ -1200,41 +1200,23 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# All 9 coins in a 3-col grid; selected coin first, with highlighted border.
-# Fresh st.columns() per row — avoids the re-entered column context rendering bug.
-_chart_coins = [(selected_coin, COINS[selected_coin])] + [
-    (cid, m) for cid, m in COINS.items() if cid != selected_coin
-]
-for row_start in range(0, len(_chart_coins), 3):
-    row_coins = _chart_coins[row_start:row_start + 3]
-    row_cols  = st.columns(3, gap="large")
-    for col, (coin_id, meta) in zip(row_cols, row_coins):
-        with col:
-            df  = charts.get(coin_id)
-            fig = make_price_chart(df, meta)
-            is_sel     = (coin_id == selected_coin)
-            wrap_style = (
-                f'border-color:{meta["color"]}55; box-shadow:0 0 0 1px {meta["color"]}33;'
-            ) if is_sel else ""
-            if fig:
-                st.markdown(f'<div class="chart-wrap" style="{wrap_style}">',
-                            unsafe_allow_html=True)
-                st.plotly_chart(fig, use_container_width=True,
-                                config={"displayModeBar": False})
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="oc-tile" style="height:260px; display:flex; flex-direction:column;
-                     align-items:center; justify-content:center; gap:10px; {wrap_style}">
-                    <div style="font-size:32px;">📡</div>
-                    <div style="color:#475569; font-size:14px; font-weight:600;">
-                        {meta['name']} chart loading…
-                    </div>
-                    <div style="color:#334155; font-size:12px;">
-                        CoinGecko rate limit — refreshes in 5 min
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+# Single full-width chart for the selected asset only
+_chart_df  = charts.get(selected_coin)
+_chart_fig = make_price_chart(_chart_df, selected_meta)
+if _chart_fig:
+    st.plotly_chart(_chart_fig, use_container_width=True,
+                    config={"displayModeBar": False})
+else:
+    st.markdown(
+        f'<div class="oc-tile" style="height:280px; display:flex; flex-direction:column;'
+        f' align-items:center; justify-content:center; gap:10px;">'
+        f'<div style="font-size:32px;">📡</div>'
+        f'<div style="color:#475569; font-size:14px; font-weight:600;">'
+        f'{selected_meta["name"]} chart loading…</div>'
+        f'<div style="color:#334155; font-size:12px;">CoinGecko rate limit — refreshes in 5 min</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SENTIMENT & ON-CHAIN  (right panel responds to selected asset)
