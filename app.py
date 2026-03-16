@@ -504,6 +504,15 @@ def fetch_fear_greed():
     except Exception:
         return None
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_fng_history_30():
+    try:
+        r = requests.get("https://api.alternative.me/fng/?limit=30", timeout=10)
+        r.raise_for_status()
+        return r.json()
+    except Exception:
+        return None
+
 @st.cache_data(ttl=600, show_spinner=False)
 def fetch_onchain():
     try:
@@ -733,6 +742,44 @@ def make_fng_history(fng_data):
     )
     return fig
 
+def make_fng_line_30(fng_data):
+    entries = fng_data["data"][:30][::-1]  # oldest → newest
+    dates   = [datetime.utcfromtimestamp(int(e["timestamp"])).strftime("%b %d") for e in entries]
+    values  = [int(e["value"]) for e in entries]
+    colors  = [fng_color(v) for v in values]
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=dates, y=values,
+        mode="lines+markers",
+        line=dict(color="#00D4FF", width=2),
+        marker=dict(color=colors, size=7, line=dict(width=0)),
+        hovertemplate="%{x}: <b>%{y}</b><extra></extra>",
+        fill="tozeroy",
+        fillcolor="rgba(0,212,255,0.08)",
+    ))
+    # Zone bands
+    for y0, y1, col in [(0,25,"rgba(239,68,68,0.06)"), (25,45,"rgba(249,115,22,0.06)"),
+                         (55,75,"rgba(132,204,22,0.06)"), (75,100,"rgba(16,185,129,0.06)")]:
+        fig.add_hrect(y0=y0, y1=y1, fillcolor=col, line_width=0)
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=8, r=8, t=12, b=8),
+        height=200,
+        showlegend=False,
+        hovermode="x unified",
+        xaxis=dict(showgrid=False, showline=False,
+                   tickfont=dict(color="#64748B", size=10, family="Inter"),
+                   tickmode="array",
+                   tickvals=dates[::5],
+                   ticktext=dates[::5]),
+        yaxis=dict(range=[0, 100], showgrid=True, gridcolor="#E2E8F0",
+                   gridwidth=1, zeroline=False,
+                   tickfont=dict(color="#64748B", size=10, family="Inter")),
+    )
+    return fig
+
 # ── Combined Intelligence Score ───────────────────────────────────────────────
 def compute_intelligence_score(prices, fng, onchain, charts, coin_id="bitcoin"):
     """
@@ -828,6 +875,7 @@ def score_meta(score):
 with st.spinner("Loading market data…"):
     prices      = fetch_prices()
     fng         = fetch_fear_greed()
+    fng30       = fetch_fng_history_30()
     onchain     = fetch_onchain()
     eth_onchain = fetch_eth_onchain()
     trending    = fetch_trending()
@@ -1689,6 +1737,71 @@ else:
         '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
         '<div style="font-size:28px; margin-bottom:8px;">📰</div>'
         '<div style="font-size:14px;">News unavailable — add your NewsAPI key to enable this section</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIGNAL INTELLIGENCE
+# ═══════════════════════════════════════════════════════════════════════════════
+st.markdown('<div class="section-header">Signal Intelligence</div>', unsafe_allow_html=True)
+
+_fng30_entries = (fng30 or {}).get("data", [])[:30] if fng30 else []
+
+if _fng30_entries:
+    _vals    = [int(e["value"]) for e in _fng30_entries]
+    _today   = _vals[0]
+    _avg     = sum(_vals) / len(_vals)
+    _extreme_fear_days = sum(1 for v in _vals if v <= 25)
+    _today_zone = fng_text(_today)
+
+    # Consecutive days in current zone
+    _consec = 0
+    for v in _vals:
+        if fng_text(v) == _today_zone:
+            _consec += 1
+        else:
+            break
+
+    # Tile 1 — Extreme Fear Days
+    _ef_color = "#EF4444" if _extreme_fear_days > 15 else "#F97316" if _extreme_fear_days > 10 else "#10B981"
+
+    # Tile 2 — 30-Day Avg Sentiment
+    _avg_color = fng_color(int(_avg))
+
+    # Tile 3 — Sentiment Trend
+    _trend_label = "Improving" if _today > _avg else "Deteriorating"
+    _trend_color = "#10B981" if _today > _avg else "#EF4444"
+
+    # Tile 4 — Consecutive Days in Zone
+    _zone_color = fng_color(_today)
+
+    _sig_cols = st.columns(4, gap="large")
+    _sig_tiles = [
+        ("Extreme Fear Days", f"{_extreme_fear_days}", "/ 30 days", _ef_color),
+        ("30-Day Avg Sentiment", f"{_avg:.0f}", f"/ 100  ·  {fng_text(int(_avg))}", _avg_color),
+        ("Sentiment Trend", _trend_label, f"vs {_avg:.0f} avg", _trend_color),
+        ("Days in Current Zone", f"{_consec}", _today_zone, _zone_color),
+    ]
+    for col, (lbl, val, sub, col_) in zip(_sig_cols, _sig_tiles):
+        with col:
+            st.markdown(
+                f'<div class="oc-tile">'
+                f'<div class="oc-label">{lbl}</div>'
+                f'<div class="oc-value" style="color:{col_}; font-size:28px;">{val}</div>'
+                f'<div style="color:#64748B; font-size:11px; margin-top:4px;">{sub}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+    st.plotly_chart(make_fng_line_30(fng30), use_container_width=True,
+                    config={"displayModeBar": False})
+else:
+    st.markdown(
+        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
+        '<div style="font-size:28px; margin-bottom:8px;">📊</div>'
+        '<div style="font-size:14px;">Signal history unavailable</div>'
         '</div>',
         unsafe_allow_html=True,
     )
