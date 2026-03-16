@@ -986,6 +986,17 @@ if st.session_state.theme == 'light':
         background: #1E293B !important;
     }
 
+    /* Email input */
+    [data-testid="stTextInput"] > div > div > input {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border-color: #CBD5E1 !important;
+    }
+    [data-testid="stTextInput"] > div > div {
+        background-color: #FFFFFF !important;
+        border-color: #CBD5E1 !important;
+    }
+
     /* Footer */
     div[style*="border-top"] span { color: #6B7280 !important; }
     </style>
