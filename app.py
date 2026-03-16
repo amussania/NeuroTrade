@@ -1281,7 +1281,17 @@ with left:
     # ── Retail Attention ──────────────────────────────────────────────────────
     st.markdown('<div class="subsection-label" style="margin-top:28px;">Retail Attention</div>',
                 unsafe_allow_html=True)
-    _TRENDS_KW = {"bitcoin": "Bitcoin", "ethereum": "Ethereum", "solana": "Solana"}
+    _TRENDS_KW = {
+        "bitcoin":     "Bitcoin",
+        "ethereum":    "Ethereum",
+        "solana":      "Solana",
+        "ripple":      "XRP crypto",
+        "cardano":     "Cardano crypto",
+        "avalanche-2": "Avalanche crypto",
+        "dogecoin":    "Dogecoin",
+        "polkadot":    "Polkadot crypto",
+        "chainlink":   "Chainlink crypto",
+    }
     _trends_data = fetch_google_trends(_TRENDS_KW.get(selected_coin, COINS[selected_coin]["name"]))
     if _trends_data and len(_trends_data) >= 3:
         _score = _trends_data[-1]
@@ -1452,6 +1462,52 @@ with right:
             </div>
         </div>""", unsafe_allow_html=True)
 
+    else:
+        # Generic panel for XRP, ADA, AVAX, DOGE, DOT, LINK
+        _coin_meta = COINS[selected_coin]
+        st.markdown(
+            f'<div class="subsection-label">{_coin_meta["name"]} Market Data</div>',
+            unsafe_allow_html=True,
+        )
+        if prices and selected_coin in prices:
+            _p = prices[selected_coin]
+            _chg = _p.get("usd_24h_change", 0) or 0
+            _chg_color = "#10B981" if _chg >= 0 else "#EF4444"
+            _generic_tiles = [
+                (f"{_coin_meta['symbol']} Price",  fmt_price(_p.get("usd")),      "USD"),
+                ("24h Change",                      f"{_chg:+.2f}%",               ""),
+                ("Market Cap",                      fmt_usd(_p.get("usd_market_cap")), ""),
+                ("24h Volume",                      fmt_usd(_p.get("usd_24h_vol")),    ""),
+            ]
+            _gt_row = st.columns(4, gap="medium")
+            for (_lbl, _val, _unit), _col in zip(_generic_tiles, _gt_row):
+                with _col:
+                    _val_color = _chg_color if _lbl == "24h Change" else "#E2E8F0"
+                    st.markdown(
+                        f'<div class="oc-tile">'
+                        f'<div class="oc-label">{_lbl}</div>'
+                        f'<div class="oc-value" style="color:{_val_color};">{_val}'
+                        f'<span class="oc-unit">{_unit}</span></div>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        else:
+            st.markdown(
+                '<div class="oc-tile" style="text-align:center; padding:60px 24px; color:#475569;">'
+                '<div style="font-size:28px; margin-bottom:8px;">📊</div>'
+                '<div style="font-size:14px;">Market data unavailable</div>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+        st.markdown(
+            '<div class="oc-tile" style="margin-top:8px; opacity:0.6;">'
+            '<div class="oc-label">Network &amp; On-Chain Data</div>'
+            '<div class="oc-value" style="font-size:16px; color:#64748B;">Coming soon</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # WAITLIST
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1508,7 +1564,7 @@ with wl_left:
                          background:linear-gradient(135deg,#00D4FF,#7C3AED);
                          display:inline-flex;align-items:center;justify-content:center;
                          font-size:11px;font-weight:700;color:#fff;">✓</span>
-            Live AI intelligence score for BTC, ETH and SOL
+            Live AI intelligence score for BTC, ETH, SOL, XRP, ADA, AVAX, DOGE, DOT &amp; LINK
         </p>
         <p style="display:flex;align-items:center;gap:12px;margin:0 0 14px 0;
                   font-size:15px;color:inherit;font-weight:500;">
