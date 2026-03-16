@@ -817,7 +817,7 @@ with st.spinner("Loading market data…"):
     onchain     = fetch_onchain()
     eth_onchain = fetch_eth_onchain()
     trending    = fetch_trending()
-    charts      = {selected_coin: fetch_chart(selected_coin)}
+    charts      = {st.session_state.selected_asset: fetch_chart(st.session_state.selected_asset)}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HEADER
