@@ -939,6 +939,18 @@ if st.session_state.theme == 'light':
         border-color: #CBD5E1 !important;
     }
     div[data-baseweb="select"] * { color: #0F172A !important; }
+    div[data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
+        border-color: #CBD5E1 !important;
+    }
+    div[data-baseweb="select"] span { color: #0F172A !important; }
+    div[data-baseweb="popover"] { background-color: #FFFFFF !important; }
+    div[data-baseweb="menu"] { background-color: #FFFFFF !important; }
+    div[data-baseweb="option"] {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+    }
+    div[data-baseweb="option"]:hover { background-color: #F1F5F9 !important; }
 
     /* Waitlist */
     .waitlist-card {
@@ -955,6 +967,11 @@ if st.session_state.theme == 'light':
     }
     .waitlist-counter-num { color: #0284C7 !important; }
     .waitlist-counter-label { color: #374151 !important; }
+
+    /* BTC reference price tile */
+    div[style*="background:#162032"] {
+        background: #1E293B !important;
+    }
 
     /* Footer */
     div[style*="border-top"] span { color: #6B7280 !important; }
