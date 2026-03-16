@@ -550,7 +550,7 @@ def fetch_crypto_news(query="crypto OR bitcoin OR ethereum"):
         url = (
             "https://newsapi.org/v2/everything"
             f"?q={query}&sortBy=publishedAt&pageSize=8"
-            "&language=en&apiKey=YOUR_KEY_HERE"
+            "&language=en&apiKey=dee97ecf90624a32b779c7ef24d978e8"
         )
         r = requests.get(url, timeout=10)
         r.raise_for_status()
