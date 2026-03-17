@@ -22,19 +22,83 @@ if 'theme' not in st.session_state:
 if 'selected_asset' not in st.session_state:
     st.session_state.selected_asset = 'bitcoin'
 
-# ── Dark theme CSS ─────────────────────────────────────────────────────────────
+# ── CSS variables theming (single codebase, dark + light) ─────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-.main > div {
-    zoom: 0.90;
+/* ── DESIGN TOKENS ── */
+:root {
+    --bg-base:              #0B1120;
+    --bg-card:              #1E293B;
+    --bg-deep:              #0B1120;
+    --border:               #334155;
+    --border-hover:         #475569;
+    --text-primary:         #FFFFFF;
+    --text-secondary:       #CBD5E1;
+    --text-muted:           #94A3B8;
+    --text-dim:             #64748B;
+    --text-very-dim:        #475569;
+    --scrollbar-track:      #0B1120;
+    --scrollbar-thumb:      #334155;
+    --section-hdr-color:    #94A3B8;
+    --section-hdr-border:   #1E293B;
+    --sub-grid-border:      #334155;
+    --waitlist-bg:          linear-gradient(135deg, #0F1E38 0%, #1A1035 100%);
+    --waitlist-headline:    #FFFFFF;
+    --waitlist-sub:         #94A3B8;
+    --waitlist-point:       #CBD5E1;
+    --waitlist-counter-bg:  rgba(0,212,255,0.06);
+    --waitlist-counter-bdr: rgba(0,212,255,0.15);
+    --waitlist-counter-num: #00D4FF;
+    --waitlist-counter-lbl: #64748B;
+    --input-bg:             #1E293B;
+    --input-color:          #CBD5E1;
+    --input-border:         #334155;
+    --selectbox-bg:         #1E293B;
+    --selectbox-color:      #CBD5E1;
+    --selectbox-border:     #334155;
 }
+
+[data-theme="light"] {
+    --bg-base:              #F0F4F8;
+    --bg-card:              #FFFFFF;
+    --bg-deep:              #E2E8F0;
+    --border:               #CBD5E1;
+    --border-hover:         #94A3B8;
+    --text-primary:         #0F172A;
+    --text-secondary:       #374151;
+    --text-muted:           #374151;
+    --text-dim:             #64748B;
+    --text-very-dim:        #64748B;
+    --scrollbar-track:      #E2E8F0;
+    --scrollbar-thumb:      #94A3B8;
+    --section-hdr-color:    #1F2937;
+    --section-hdr-border:   #CBD5E1;
+    --sub-grid-border:      #CBD5E1;
+    --waitlist-bg:          linear-gradient(135deg, #EBF4FF 0%, #F0E6FF 100%);
+    --waitlist-headline:    #0F172A;
+    --waitlist-sub:         #374151;
+    --waitlist-point:       #1F2937;
+    --waitlist-counter-bg:  rgba(0,180,220,0.06);
+    --waitlist-counter-bdr: rgba(0,180,220,0.2);
+    --waitlist-counter-num: #0284C7;
+    --waitlist-counter-lbl: #374151;
+    --input-bg:             #FFFFFF;
+    --input-color:          #0F172A;
+    --input-border:         #CBD5E1;
+    --selectbox-bg:         #FFFFFF;
+    --selectbox-color:      #0F172A;
+    --selectbox-border:     #CBD5E1;
+}
+
+/* ── BASE ── */
+.main > div { zoom: 0.90; }
 
 html, body, [class*="css"], .stApp {
     font-family: 'Inter', sans-serif !important;
-    background-color: #0B1120 !important;
-    color: #CBD5E1;
+    background-color: var(--bg-base) !important;
+    color: var(--text-secondary);
 }
 
 /* Hide Streamlit chrome */
@@ -45,19 +109,19 @@ html, body, [class*="css"], .stApp {
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: #0B1120; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
 
 /* ── SECTION HEADERS ── */
 .section-header {
-    color: #94A3B8;
+    color: var(--section-hdr-color);
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 3px;
     text-transform: uppercase;
     margin: 40px 0 20px 0;
     padding-bottom: 12px;
-    border-bottom: 1px solid #1E293B;
+    border-bottom: 1px solid var(--section-hdr-border);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -73,8 +137,8 @@ html, body, [class*="css"], .stApp {
 
 /* ── PRICE CARDS ── */
 .price-card {
-    background: #1E293B;
-    border: 1px solid #334155;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 20px 20px 0 0;
     padding: 28px 28px 22px 28px;
     margin-bottom: 0;
@@ -91,8 +155,8 @@ html, body, [class*="css"], .stApp {
     border-radius: 20px 20px 0 0;
 }
 .price-card:hover {
-    border-color: #475569;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    border-color: var(--border-hover);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
 
 .coin-label {
@@ -104,6 +168,7 @@ html, body, [class*="css"], .stApp {
     display: flex;
     align-items: center;
     gap: 8px;
+    color: var(--text-dim);
 }
 .coin-dot {
     width: 8px; height: 8px;
@@ -113,7 +178,7 @@ html, body, [class*="css"], .stApp {
 .coin-price {
     font-size: 64px;
     font-weight: 800;
-    color: #FFFFFF;
+    color: var(--text-primary);
     letter-spacing: -1.5px;
     line-height: 1.05;
     margin: 6px 0 10px 0;
@@ -146,10 +211,10 @@ html, body, [class*="css"], .stApp {
     gap: 12px;
     margin-top: 18px;
     padding-top: 18px;
-    border-top: 1px solid #334155;
+    border-top: 1px solid var(--sub-grid-border);
 }
 .sub-item-label {
-    color: #64748B;
+    color: var(--text-dim);
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 1px;
@@ -157,24 +222,24 @@ html, body, [class*="css"], .stApp {
     margin-bottom: 4px;
 }
 .sub-item-value {
-    color: #94A3B8;
+    color: var(--text-muted);
     font-size: 16px;
     font-weight: 600;
 }
 
 /* ── ON-CHAIN TILES ── */
 .oc-tile {
-    background: #1E293B;
-    border: 1px solid #334155;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 16px;
     padding: 24px 24px 20px 24px;
     transition: border-color 0.2s ease;
 }
-.oc-tile:hover { border-color: #475569; }
+.oc-tile:hover { border-color: var(--border-hover); }
 .oc-label {
     font-size: 11px;
     font-weight: 700;
-    color: #64748B;
+    color: var(--text-dim);
     letter-spacing: 2px;
     text-transform: uppercase;
     margin-bottom: 10px;
@@ -182,13 +247,13 @@ html, body, [class*="css"], .stApp {
 .oc-value {
     font-size: 28px;
     font-weight: 800;
-    color: #FFFFFF;
+    color: var(--text-primary);
     letter-spacing: -0.5px;
     line-height: 1.1;
 }
 .oc-unit {
     font-size: 14px;
-    color: #64748B;
+    color: var(--text-dim);
     font-weight: 500;
     margin-left: 4px;
 }
@@ -204,14 +269,14 @@ html, body, [class*="css"], .stApp {
 }
 .fng-sub {
     text-align: center;
-    color: #475569;
+    color: var(--text-very-dim);
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 2px;
     text-transform: uppercase;
 }
 .subsection-label {
-    color: #64748B;
+    color: var(--text-dim);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 2px;
@@ -233,8 +298,8 @@ html, body, [class*="css"], .stApp {
 
 /* ── CHART CONTAINER ── */
 .chart-wrap {
-    background: #1E293B;
-    border: 1px solid #334155;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 20px;
     padding: 4px;
     overflow: hidden;
@@ -242,8 +307,8 @@ html, body, [class*="css"], .stApp {
 
 /* ── INTELLIGENCE SCORE ── */
 .intel-card {
-    background: #1E293B;
-    border: 1px solid #334155;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 24px;
     padding: 24px 32px 20px 32px;
     margin: 8px 0 4px 0;
@@ -263,27 +328,29 @@ html, body, [class*="css"], .stApp {
     font-weight: 800;
     letter-spacing: -3px;
     line-height: 1;
+    color: var(--text-primary);
 }
 .intel-label {
     font-size: 20px;
     font-weight: 700;
     letter-spacing: 0.5px;
     margin-top: 6px;
+    color: var(--text-primary);
 }
 .intel-explanation {
-    color: #94A3B8;
+    color: var(--text-muted);
     font-size: 15px;
     font-weight: 400;
     margin-top: 8px;
     line-height: 1.5;
 }
 .intel-bar-track {
-    background: #0B1120;
+    background: var(--bg-deep);
     border-radius: 999px;
     height: 16px;
     margin: 20px 0 8px 0;
     overflow: hidden;
-    border: 1px solid #334155;
+    border: 1px solid var(--border);
 }
 .intel-bar-fill {
     height: 100%;
@@ -296,14 +363,14 @@ html, body, [class*="css"], .stApp {
     gap: 5px;
 }
 .intel-comp-label {
-    color: #64748B;
+    color: var(--text-dim);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 1.5px;
     text-transform: uppercase;
 }
 .intel-comp-bar-track {
-    background: #0B1120;
+    background: var(--bg-deep);
     border-radius: 999px;
     height: 6px;
     overflow: hidden;
@@ -314,7 +381,7 @@ html, body, [class*="css"], .stApp {
     opacity: 0.7;
 }
 .intel-comp-value {
-    color: #CBD5E1;
+    color: var(--text-secondary);
     font-size: 13px;
     font-weight: 600;
     margin-top: 1px;
@@ -322,8 +389,8 @@ html, body, [class*="css"], .stApp {
 
 /* ── WAITLIST ── */
 .waitlist-card {
-    background: linear-gradient(135deg, #0F1E38 0%, #1A1035 100%);
-    border: 1px solid #334155;
+    background: var(--waitlist-bg);
+    border: 1px solid var(--border);
     border-radius: 24px;
     padding: 52px 56px;
     position: relative;
@@ -340,14 +407,14 @@ html, body, [class*="css"], .stApp {
 .waitlist-headline {
     font-size: 36px;
     font-weight: 900;
-    color: #FFFFFF;
+    color: var(--waitlist-headline);
     letter-spacing: -1px;
     line-height: 1.1;
     margin-bottom: 16px;
 }
 .waitlist-sub {
     font-size: 16px;
-    color: #94A3B8;
+    color: var(--waitlist-sub);
     line-height: 1.7;
     margin-bottom: 32px;
     max-width: 520px;
@@ -358,7 +425,7 @@ html, body, [class*="css"], .stApp {
     gap: 12px;
     margin-bottom: 14px;
     font-size: 15px;
-    color: #CBD5E1;
+    color: var(--waitlist-point);
     font-weight: 500;
 }
 .waitlist-check {
@@ -376,8 +443,8 @@ html, body, [class*="css"], .stApp {
     font-weight: 700;
 }
 .waitlist-counter-box {
-    background: rgba(0, 212, 255, 0.06);
-    border: 1px solid rgba(0, 212, 255, 0.15);
+    background: var(--waitlist-counter-bg);
+    border: 1px solid var(--waitlist-counter-bdr);
     border-radius: 12px;
     padding: 16px 20px;
     margin-top: 24px;
@@ -388,18 +455,18 @@ html, body, [class*="css"], .stApp {
 .waitlist-counter-num {
     font-size: 32px;
     font-weight: 900;
-    color: #00D4FF;
+    color: var(--waitlist-counter-num);
     letter-spacing: -1px;
     line-height: 1;
 }
 .waitlist-counter-label {
-    color: #64748B;
+    color: var(--waitlist-counter-lbl);
     font-size: 13px;
     font-weight: 500;
     line-height: 1.4;
 }
 .waitlist-urgency {
-    color: #64748B;
+    color: var(--text-dim);
     font-size: 12px;
     font-weight: 500;
     text-align: center;
@@ -407,7 +474,37 @@ html, body, [class*="css"], .stApp {
     letter-spacing: 0.2px;
 }
 
-/* Streamlit form element overrides inside waitlist */
+/* ── SELECTBOX ── */
+[data-testid="stSelectbox"] > div > div,
+div[data-baseweb="select"] > div {
+    background-color: var(--selectbox-bg) !important;
+    color: var(--selectbox-color) !important;
+    border-color: var(--selectbox-border) !important;
+}
+div[data-baseweb="select"] * { color: var(--selectbox-color) !important; }
+div[data-baseweb="select"] svg { fill: var(--text-dim) !important; }
+div[data-baseweb="popover"],
+div[data-baseweb="menu"] { background-color: var(--selectbox-bg) !important; }
+div[data-baseweb="option"] {
+    background-color: var(--selectbox-bg) !important;
+    color: var(--selectbox-color) !important;
+}
+div[data-baseweb="option"]:hover { background-color: var(--bg-deep) !important; }
+li[role="option"] {
+    background-color: var(--selectbox-bg) !important;
+    color: var(--selectbox-color) !important;
+}
+li[role="option"]:hover { background-color: var(--bg-deep) !important; }
+
+/* ── EMAIL INPUT ── */
+[data-testid="stTextInput"] > div > div > input,
+[data-testid="stTextInput"] > div > div {
+    background-color: var(--input-bg) !important;
+    color: var(--input-color) !important;
+    border-color: var(--input-border) !important;
+}
+
+/* Streamlit form element overrides */
 div[data-testid="stForm"] {
     border: none !important;
     padding: 0 !important;
@@ -720,20 +817,20 @@ def make_price_chart(df, meta):
         ),
         xaxis=dict(
             showgrid=True,
-            gridcolor="#E2E8F0",
+            gridcolor="rgba(128,128,128,0.15)",
             gridwidth=1,
             showline=False,
             zeroline=False,
-            tickfont=dict(size=11, color="#64748B", family="Inter"),
+            tickfont=dict(size=11, color="#94A3B8", family="Inter"),
             tickformat="%b %d",
         ),
         yaxis=dict(
             showgrid=True,
-            gridcolor="#E2E8F0",
+            gridcolor="rgba(128,128,128,0.15)",
             gridwidth=1,
             showline=False,
             zeroline=False,
-            tickfont=dict(size=11, color="#64748B", family="Inter"),
+            tickfont=dict(size=11, color="#94A3B8", family="Inter"),
             tickprefix="$",
             tickformat=",.0f" if is_large else ",.2f",
             side="right",
@@ -797,7 +894,7 @@ def make_fng_history(fng_data):
         xaxis=dict(
             showgrid=False,
             showline=False,
-            tickfont=dict(color="#64748B", size=11, family="Inter"),
+            tickfont=dict(color="#94A3B8", size=11, family="Inter"),
         ),
         yaxis=dict(range=[0, 120], visible=False),
         height=160,
@@ -834,13 +931,13 @@ def make_fng_line_30(fng_data):
         showlegend=False,
         hovermode="x unified",
         xaxis=dict(showgrid=False, showline=False,
-                   tickfont=dict(color="#64748B", size=10, family="Inter"),
+                   tickfont=dict(color="#94A3B8", size=10, family="Inter"),
                    tickmode="array",
                    tickvals=dates[::5],
                    ticktext=dates[::5]),
-        yaxis=dict(range=[0, 100], showgrid=True, gridcolor="#E2E8F0",
+        yaxis=dict(range=[0, 100], showgrid=True, gridcolor="rgba(128,128,128,0.15)",
                    gridwidth=1, zeroline=False,
-                   tickfont=dict(color="#64748B", size=10, family="Inter")),
+                   tickfont=dict(color="#94A3B8", size=10, family="Inter")),
     )
     return fig
 
@@ -1038,134 +1135,13 @@ with col_ts:
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-# ── Inject light mode overrides if needed ─────────────────────────────────────
-if st.session_state.theme == 'light':
-    st.markdown("""
-    <style>
-    html, body, [class*="css"], .stApp {
-        background-color: #F0F4F8 !important;
-        color: #1A202C !important;
-    }
-    ::-webkit-scrollbar-track { background: #E2E8F0; }
-    ::-webkit-scrollbar-thumb { background: #94A3B8; }
-    /* Section headers */
-    .section-header {
-        color: #1F2937 !important;
-        border-bottom-color: #CBD5E1 !important;
-    }
-    .section-header::before { background: linear-gradient(180deg, #00d4ff, #7c3aed); }
-
-    /* Cards and tiles */
-    .price-card, .oc-tile, .intel-card, .chart-wrap, .fng-card {
-        background: #FFFFFF !important;
-        border-color: #CBD5E1 !important;
-    }
-    .price-card:hover, .oc-tile:hover { border-color: #94A3B8 !important; }
-
-    /* Price card */
-    .coin-price { color: #0F172A !important; }
-    .coin-label, .subsection-label { color: #2D3748 !important; }
-    .sub-item-label, .oc-label, .fng-sub,
-    .oc-unit, .waitlist-urgency { color: #64748B !important; }
-    .sub-item-value, .sub-row span { color: #374151 !important; }
-    .sub-grid { border-top-color: #CBD5E1 !important; }
-
-    /* Intelligence card */
-    .intel-score-number { color: #0F172A !important; }
-    .intel-label { color: #0F172A !important; }
-    .intel-explanation { color: #374151 !important; }
-    .intel-comp-value { color: #1F2937 !important; }
-    .intel-comp-label { color: #4B5563 !important; }
-    .intel-bar-track, .intel-comp-bar-track {
-        background: #E2E8F0 !important;
-        border-color: #CBD5E1 !important;
-    }
-    .intel-comp-bar-fill + div, [style*="color:#334155"] { color: #64748B !important; }
-
-    /* On-chain tiles */
-    .oc-value { color: #0F172A !important; }
-
-    /* F&G */
-    .fng-label-big { color: inherit; }
-
-    /* Chart area */
-    .chart-wrap { background: #FFFFFF !important; }
-
-    /* Dropdown selector */
-    [data-testid="stSelectbox"] > div > div {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-        border-color: #CBD5E1 !important;
-    }
-    [data-testid="stSelectbox"] > div > div > div { color: #0F172A !important; }
-    [data-testid="stSelectbox"] svg { fill: #0F172A !important; }
-    [data-baseweb="select"] * {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-    }
-    [data-baseweb="popover"] * {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-    }
-    li[role="option"] {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-    }
-    li[role="option"]:hover { background-color: #F1F5F9 !important; }
-    div[data-baseweb="select"] {
-        background: #FFFFFF !important;
-        border-color: #CBD5E1 !important;
-    }
-    div[data-baseweb="select"] * { color: #0F172A !important; }
-    div[data-baseweb="select"] > div {
-        background-color: #FFFFFF !important;
-        border-color: #CBD5E1 !important;
-    }
-    div[data-baseweb="select"] span { color: #0F172A !important; }
-    div[data-baseweb="popover"] { background-color: #FFFFFF !important; }
-    div[data-baseweb="menu"] { background-color: #FFFFFF !important; }
-    div[data-baseweb="option"] {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-    }
-    div[data-baseweb="option"]:hover { background-color: #F1F5F9 !important; }
-
-    /* Waitlist */
-    .waitlist-card {
-        background: linear-gradient(135deg, #EBF4FF 0%, #F0E6FF 100%) !important;
-        border-color: #CBD5E1 !important;
-    }
-    .waitlist-headline { color: #0F172A !important; }
-    .waitlist-sub { color: #374151 !important; }
-    .waitlist-value-point,
-    .waitlist-card p { color: #1F2937 !important; }
-    .waitlist-counter-box {
-        background: rgba(0,180,220,0.06) !important;
-        border-color: rgba(0,180,220,0.2) !important;
-    }
-    .waitlist-counter-num { color: #0284C7 !important; }
-    .waitlist-counter-label { color: #374151 !important; }
-
-    /* BTC reference price tile */
-    div[style*="background:#162032"] {
-        background: #1E293B !important;
-    }
-
-    /* Email input */
-    [data-testid="stTextInput"] > div > div > input {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-        border-color: #CBD5E1 !important;
-    }
-    [data-testid="stTextInput"] > div > div {
-        background-color: #FFFFFF !important;
-        border-color: #CBD5E1 !important;
-    }
-
-    /* Footer */
-    div[style*="border-top"] span { color: #6B7280 !important; }
-    </style>
-    """, unsafe_allow_html=True)
+# ── Apply data-theme attribute so CSS variables switch correctly ───────────────
+_theme_attr = "light" if st.session_state.theme == "light" else "dark"
+st.markdown(f"""
+<script>
+document.documentElement.setAttribute('data-theme', '{_theme_attr}');
+</script>
+""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # COMBINED INTELLIGENCE SCORE
@@ -1179,28 +1155,6 @@ ASSET_COLORS = {cid: meta["color"] for cid, meta in COINS.items()}
 if st.session_state.selected_asset not in ASSET_COLORS:
     st.session_state.selected_asset = 'bitcoin'
 
-# Style the selectbox to match the dashboard aesthetic
-st.markdown(f"""
-<style>
-div[data-testid="stSelectbox"] > div > div {{
-    background: #1E293B !important;
-    border: 1.5px solid #334155 !important;
-    border-radius: 12px !important;
-    color: #CBD5E1 !important;
-    font-size: 15px !important;
-    font-weight: 600 !important;
-}}
-div[data-testid="stSelectbox"] > div > div:hover {{
-    border-color: #475569 !important;
-}}
-div[data-testid="stSelectbox"] > div > div > div {{
-    color: #CBD5E1 !important;
-}}
-div[data-testid="stSelectbox"] svg {{
-    fill: #64748B !important;
-}}
-</style>
-""", unsafe_allow_html=True)
 
 sel_col, _ = st.columns([2, 5])
 with sel_col:
@@ -2067,16 +2021,16 @@ try:
         height=440,
         showlegend=False,
         hovermode="x unified",
-        font=dict(family="Inter", color="#64748B", size=10),
+        font=dict(family="Inter", color="#94A3B8", size=10),
     )
     for _ax in ("xaxis", "xaxis2"):
         _bt_fig.update_layout(**{_ax: dict(showgrid=False, showline=False,
-                                           tickfont=dict(color="#64748B", size=10))})
+                                           tickfont=dict(color="#94A3B8", size=10))})
     _bt_fig.update_layout(
         yaxis=dict(tickprefix="$", tickformat=",.0f", showgrid=True,
-                   gridcolor="#E2E8F0", zeroline=False,
+                   gridcolor="rgba(128,128,128,0.15)", zeroline=False,
                    tickfont=dict(color="#F7931A", size=10)),
-        yaxis2=dict(range=[0, 100], showgrid=True, gridcolor="#E2E8F0",
+        yaxis2=dict(range=[0, 100], showgrid=True, gridcolor="rgba(128,128,128,0.15)",
                     zeroline=False, tickfont=dict(color="#00D4FF", size=10)),
     )
     for ann in _bt_fig.layout.annotations:
