@@ -581,23 +581,29 @@ def compute_accuracy_tracker(btc_yearly, fng30):
 @st.cache_data(ttl=86400, show_spinner=False)
 def fetch_google_trends():
     try:
-        pytrends = TrendReq(hl='en-US', tz=0, timeout=(10, 25))
+        pytrends = TrendReq(
+            hl='en-US',
+            tz=0,
+            timeout=(15, 30),
+            retries=3,
+            backoff_factor=1.0
+        )
         pytrends.build_payload(
-            ['Bitcoin', 'crypto'],
-            timeframe='today 3-m',
+            ['Bitcoin'],
+            timeframe='today 1-m',
             geo=''
         )
         df = pytrends.interest_over_time()
         if df is None or df.empty:
             return None
         df = df.drop(columns=['isPartial'], errors='ignore')
-        latest = df.iloc[-1]
-        avg_30 = df.tail(4).mean()
+        latest_val = int(df['Bitcoin'].iloc[-1])
+        avg_val = float(df['Bitcoin'].tail(4).mean())
         return {
-            'bitcoin_now': int(latest.get('Bitcoin', 0)),
-            'crypto_now': int(latest.get('crypto', 0)),
-            'bitcoin_avg': float(avg_30.get('Bitcoin', 0)),
-            'crypto_avg': float(avg_30.get('crypto', 0)),
+            'bitcoin_now': latest_val,
+            'crypto_now': latest_val,
+            'bitcoin_avg': avg_val,
+            'crypto_avg': avg_val,
             'df': df
         }
     except Exception:
@@ -610,18 +616,17 @@ def fetch_funding_rates():
         results = {}
         for symbol in symbols:
             url = (
-                'https://fapi.binance.com/fapi/v1/premiumIndex'
-                f'?symbol={symbol}'
+                'https://fapi.binance.com/fapi/v1/fundingRate'
+                f'?symbol={symbol}&limit=1'
             )
             r = requests.get(url, timeout=10, headers=HEADERS)
             r.raise_for_status()
             data = r.json()
-            rate = float(data.get('lastFundingRate', 0)) * 100
-            results[symbol] = {
-                'rate': rate,
-                'mark_price': float(data.get('markPrice', 0)),
-                'index_price': float(data.get('indexPrice', 0)),
-            }
+            if isinstance(data, list) and len(data) > 0:
+                rate = float(data[0].get('fundingRate', 0)) * 100
+            else:
+                rate = 0.0
+            results[symbol] = {'rate': rate}
             time.sleep(0.3)
         return results
     except Exception:
