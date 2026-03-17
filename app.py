@@ -60,37 +60,6 @@ st.markdown("""
     --selectbox-border:     #334155;
 }
 
-[data-theme="light"] {
-    --bg-base:              #F0F4F8;
-    --bg-card:              #FFFFFF;
-    --bg-deep:              #E2E8F0;
-    --border:               #CBD5E1;
-    --border-hover:         #94A3B8;
-    --text-primary:         #0F172A;
-    --text-secondary:       #374151;
-    --text-muted:           #374151;
-    --text-dim:             #64748B;
-    --text-very-dim:        #64748B;
-    --scrollbar-track:      #E2E8F0;
-    --scrollbar-thumb:      #94A3B8;
-    --section-hdr-color:    #1F2937;
-    --section-hdr-border:   #CBD5E1;
-    --sub-grid-border:      #CBD5E1;
-    --waitlist-bg:          linear-gradient(135deg, #EBF4FF 0%, #F0E6FF 100%);
-    --waitlist-headline:    #0F172A;
-    --waitlist-sub:         #374151;
-    --waitlist-point:       #1F2937;
-    --waitlist-counter-bg:  rgba(0,180,220,0.06);
-    --waitlist-counter-bdr: rgba(0,180,220,0.2);
-    --waitlist-counter-num: #0284C7;
-    --waitlist-counter-lbl: #374151;
-    --input-bg:             #FFFFFF;
-    --input-color:          #0F172A;
-    --input-border:         #CBD5E1;
-    --selectbox-bg:         #FFFFFF;
-    --selectbox-color:      #0F172A;
-    --selectbox-border:     #CBD5E1;
-}
 
 /* ── BASE ── */
 .main > div { zoom: 0.90; }
@@ -1135,13 +1104,43 @@ with col_ts:
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-# ── Apply data-theme attribute so CSS variables switch correctly ───────────────
-_theme_attr = "light" if st.session_state.theme == "light" else "dark"
-st.markdown(f"""
-<script>
-document.documentElement.setAttribute('data-theme', '{_theme_attr}');
-</script>
-""", unsafe_allow_html=True)
+# ── Override CSS variables for light mode ─────────────────────────────────────
+if st.session_state.theme == "light":
+    st.markdown("""
+    <style>
+    :root {
+        --bg-base:              #F0F4F8;
+        --bg-card:              #FFFFFF;
+        --bg-deep:              #E2E8F0;
+        --border:               #CBD5E1;
+        --border-hover:         #94A3B8;
+        --text-primary:         #0F172A;
+        --text-secondary:       #374151;
+        --text-muted:           #374151;
+        --text-dim:             #64748B;
+        --text-very-dim:        #64748B;
+        --scrollbar-track:      #E2E8F0;
+        --scrollbar-thumb:      #94A3B8;
+        --section-hdr-color:    #1F2937;
+        --section-hdr-border:   #CBD5E1;
+        --sub-grid-border:      #CBD5E1;
+        --waitlist-bg:          linear-gradient(135deg, #EBF4FF 0%, #F0E6FF 100%);
+        --waitlist-headline:    #0F172A;
+        --waitlist-sub:         #374151;
+        --waitlist-point:       #1F2937;
+        --waitlist-counter-bg:  rgba(0,180,220,0.06);
+        --waitlist-counter-bdr: rgba(0,180,220,0.2);
+        --waitlist-counter-num: #0284C7;
+        --waitlist-counter-lbl: #374151;
+        --input-bg:             #FFFFFF;
+        --input-color:          #0F172A;
+        --input-border:         #CBD5E1;
+        --selectbox-bg:         #FFFFFF;
+        --selectbox-color:      #0F172A;
+        --selectbox-border:     #CBD5E1;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # COMBINED INTELLIGENCE SCORE
