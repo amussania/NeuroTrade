@@ -2164,37 +2164,34 @@ else:
 
     st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
 
-    _hdr = st.columns([2, 2, 2, 2, 2], gap="small")
-    for col, label in zip(_hdr, ["Date", "Signal", "F&G Score", "BTC Price at Signal", "7-Day Return"]):
-        with col:
-            st.markdown(
-                f'<div style="color:#475569; font-size:11px; font-weight:700;'
-                f' letter-spacing:1.5px; text-transform:uppercase; padding:4px 0;">{label}</div>',
-                unsafe_allow_html=True,
-            )
+    with st.expander("View Full Signal History →", expanded=False):
+        _hdr = st.columns([2, 2, 2, 2, 2], gap="small")
+        for col, label in zip(_hdr, ["Date", "Signal", "F&G Score", "BTC Price at Signal", "7-Day Return"]):
+            with col:
+                st.markdown(f'<div style="color:#475569; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:4px 0;">{label}</div>', unsafe_allow_html=True)
 
-    seen = set()
-    for r in accuracy_data:
-        if r["period"] == "7d":
-            key = r["date"] + r["signal"]
-            if key in seen:
-                continue
-            seen.add(key)
-            ret_color = "#10B981" if r["return"] > 0 else "#EF4444"
-            ret_arrow = "▲" if r["return"] > 0 else "▼"
-            _row = st.columns([2, 2, 2, 2, 2], gap="small")
-            with _row[0]:
-                st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">{r["date"]}</div>', unsafe_allow_html=True)
-            with _row[1]:
-                st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{r["color"]}; font-size:12px; font-weight:700; letter-spacing:1px;">{r["signal"]}</div>', unsafe_allow_html=True)
-            with _row[2]:
-                st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">{r["fng"]}</div>', unsafe_allow_html=True)
-            with _row[3]:
-                st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">${r["price_at"]:,.0f}</div>', unsafe_allow_html=True)
-            with _row[4]:
-                st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{ret_color}; font-size:13px; font-weight:700;">{ret_arrow} {abs(r["return"]):.2f}%</div>', unsafe_allow_html=True)
+        seen = set()
+        for r in accuracy_data:
+            if r["period"] == "7d":
+                key = r["date"] + r["signal"]
+                if key in seen:
+                    continue
+                seen.add(key)
+                ret_color = "#10B981" if r["return"] > 0 else "#EF4444"
+                ret_arrow = "▲" if r["return"] > 0 else "▼"
+                _row = st.columns([2, 2, 2, 2, 2], gap="small")
+                with _row[0]:
+                    st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">{r["date"]}</div>', unsafe_allow_html=True)
+                with _row[1]:
+                    st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{r["color"]}; font-size:12px; font-weight:700; letter-spacing:1px;">{r["signal"]}</div>', unsafe_allow_html=True)
+                with _row[2]:
+                    st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">{r["fng"]}</div>', unsafe_allow_html=True)
+                with _row[3]:
+                    st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">${r["price_at"]:,.0f}</div>', unsafe_allow_html=True)
+                with _row[4]:
+                    st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{ret_color}; font-size:13px; font-weight:700;">{ret_arrow} {abs(r["return"]):.2f}%</div>', unsafe_allow_html=True)
 
-    st.markdown('<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">Based on Fear &amp; Greed extremes vs BTC price. Not financial advice.</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">Based on Fear & Greed extremes vs BTC price. Not financial advice.</div>', unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WHALE ACTIVITY
