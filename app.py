@@ -1912,9 +1912,8 @@ if _dff is not None:
 
 if _macro_insights:
     st.markdown(
-        '<div class="intel-explanation" style="margin-top:16px; padding:16px 20px;'
-        ' background:#162032; border:1px solid #1E293B; border-radius:12px;'
-        ' color:#94A3B8; font-size:13px; line-height:1.7;">'
+        '<div class="intel-explanation oc-tile" style="margin-top:16px;'
+        ' font-size:13px; line-height:1.7;">'
         + "  ".join(f"· {s}" for s in _macro_insights)
         + '</div>',
         unsafe_allow_html=True,
