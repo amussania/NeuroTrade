@@ -619,10 +619,11 @@ def fetch_whale_transactions():
 @st.cache_data(ttl=1800, show_spinner=False)
 def fetch_crypto_news(query="crypto OR bitcoin OR ethereum"):
     try:
+        news_api_key = st.secrets.get("NEWS_API_KEY", "")
         url = (
-            "https://newsapi.org/v2/everything"
+            f"https://newsapi.org/v2/everything"
             f"?q={query}&sortBy=publishedAt&pageSize=8"
-            "&language=en&apiKey={st.secrets.get("NEWS_API_KEY", "")}"
+            f"&language=en&apiKey={news_api_key}"
         )
         r = requests.get(url, timeout=10)
         r.raise_for_status()
