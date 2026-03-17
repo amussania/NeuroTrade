@@ -592,6 +592,30 @@ def fetch_btc_yearly():
     except Exception:
         return None
 
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_whale_transactions():
+    try:
+        url = "https://blockchain.info/unconfirmed-transactions?format=json&limit=100"
+        r = requests.get(url, timeout=15, headers=HEADERS)
+        r.raise_for_status()
+        data = r.json()
+        txs = data.get("txs", [])
+        whales = []
+        for tx in txs:
+            out_value = sum(o.get("value", 0) for o in tx.get("out", []))
+            btc_value = out_value / 1e8
+            if btc_value >= 10:
+                whales.append({
+                    "hash":    tx.get("hash", "")[:16] + "...",
+                    "btc":     btc_value,
+                    "inputs":  len(tx.get("inputs", [])),
+                    "outputs": len(tx.get("out", [])),
+                })
+        whales.sort(key=lambda x: x["btc"], reverse=True)
+        return whales[:8]
+    except Exception:
+        return None
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def fetch_crypto_news(query="crypto OR bitcoin OR ethereum"):
     try:
@@ -920,6 +944,7 @@ with st.spinner("Loading market data…"):
     trending    = fetch_trending()
     news        = fetch_crypto_news()
     btc_yearly  = fetch_btc_yearly()
+    whale_txs   = fetch_whale_transactions()
     macro_dff   = fetch_fred_series("DFF",      FRED_API_KEY)
     macro_dxy   = fetch_fred_series("DTWEXBGS", FRED_API_KEY)
     macro_t10   = fetch_fred_series("T10YIE",   FRED_API_KEY)
@@ -2069,6 +2094,106 @@ except Exception:
         '<div style="font-size:28px; margin-bottom:8px;">📈</div>'
         '<div style="font-size:14px;">Data loading — refresh in 5 minutes</div>'
         '</div>',
+        unsafe_allow_html=True,
+    )
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WHALE ACTIVITY
+# ═══════════════════════════════════════════════════════════════════════════════
+st.markdown('<div class="section-header">Whale Activity</div>', unsafe_allow_html=True)
+
+if whale_txs is None:
+    st.markdown(
+        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
+        '<div style="font-size:28px; margin-bottom:8px;">🐋</div>'
+        '<div style="font-size:14px;">Whale data unavailable — retrying next refresh</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+elif len(whale_txs) == 0:
+    st.markdown(
+        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
+        '<div style="font-size:28px; margin-bottom:8px;">🐋</div>'
+        '<div style="font-size:14px;">No unconfirmed transactions over 10 BTC right now</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+else:
+    _largest   = whale_txs[0]["btc"]
+    _total_btc = sum(w["btc"] for w in whale_txs)
+    _count     = len(whale_txs)
+    _count_color = "#EF4444" if _count >= 20 else "#F97316" if _count >= 10 else "#10B981"
+
+    # ── Summary tiles ────────────────────────────────────────────────────────
+    _wh_cols = st.columns(3, gap="large")
+    _wh_summary = [
+        ("Largest Pending TX",  f"{_largest:,.2f}",  "BTC", "#F7931A"),
+        ("Total Whale Volume",  f"{_total_btc:,.2f}", "BTC", "#94A3B8"),
+        ("Whale TX Count",      str(_count),          f"of {_count} shown", _count_color),
+    ]
+    for col, (lbl, val, unit, col_) in zip(_wh_cols, _wh_summary):
+        with col:
+            st.markdown(
+                f'<div class="oc-tile">'
+                f'<div class="oc-label">{lbl}</div>'
+                f'<div class="oc-value" style="color:{col_};">{val}'
+                f'<span class="oc-unit">{unit}</span></div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+
+    # ── Transaction table ────────────────────────────────────────────────────
+    _hdr_cols = st.columns([3, 2, 2, 2], gap="small")
+    for col, label in zip(_hdr_cols, ["TX Hash", "BTC Amount", "Inputs / Outputs", "Size"]):
+        with col:
+            st.markdown(
+                f'<div style="color:#475569; font-size:11px; font-weight:700;'
+                f' letter-spacing:1.5px; text-transform:uppercase; padding:4px 0;">{label}</div>',
+                unsafe_allow_html=True,
+            )
+
+    for w in whale_txs:
+        _btc = w["btc"]
+        if _btc >= 100:
+            _size_label, _size_color = "LARGE",    "#EF4444"
+        elif _btc >= 50:
+            _size_label, _size_color = "MEDIUM",   "#F97316"
+        else:
+            _size_label, _size_color = "STANDARD", "#94A3B8"
+
+        _row = st.columns([3, 2, 2, 2], gap="small")
+        with _row[0]:
+            st.markdown(
+                f'<div class="oc-tile" style="padding:10px 14px; font-family:monospace;'
+                f' font-size:12px; color:#64748B;">{w["hash"]}</div>',
+                unsafe_allow_html=True,
+            )
+        with _row[1]:
+            st.markdown(
+                f'<div class="oc-tile" style="padding:10px 14px;">'
+                f'<span style="color:#F7931A; font-weight:700; font-size:13px;">{_btc:,.2f}</span>'
+                f'<span style="color:#475569; font-size:11px;"> BTC</span></div>',
+                unsafe_allow_html=True,
+            )
+        with _row[2]:
+            st.markdown(
+                f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:12px;">'
+                f'{w["inputs"]} in / {w["outputs"]} out</div>',
+                unsafe_allow_html=True,
+            )
+        with _row[3]:
+            st.markdown(
+                f'<div class="oc-tile" style="padding:10px 14px;">'
+                f'<span style="color:{_size_color}; font-size:11px; font-weight:700;'
+                f' letter-spacing:1px;">{_size_label}</span></div>',
+                unsafe_allow_html=True,
+            )
+
+    st.markdown(
+        '<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">'
+        'Showing unconfirmed BTC transactions over 10 BTC. Updates every 5 minutes.</div>',
         unsafe_allow_html=True,
     )
 
