@@ -944,8 +944,8 @@ def compute_accuracy_tracker(btc_yearly, fng30):
         fng_val = int(entry["value"])
         if fng_val <= 30 or fng_val >= 70:
             signal_date = datetime.utcfromtimestamp(int(entry["timestamp"]))
-            signal_label = "Strong Bull" if fng_val >= 70 else "Strong Bear"
-            signal_color = "#10B981" if fng_val >= 70 else "#EF4444"
+            signal_label = "Greed Reversal Signal" if fng_val >= 70 else "Fear Reversal Signal"
+            signal_color = "#F97316" if fng_val >= 70 else "#10B981"
             df = btc_yearly.copy()
             df["diff"] = (df["ts"] - signal_date).abs()
             closest = df.loc[df["diff"].idxmin()]
@@ -2139,19 +2139,17 @@ accuracy_data = compute_accuracy_tracker(btc_yearly, fng30)
 if accuracy_data is None:
     st.markdown('<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;"><div style="font-size:28px; margin-bottom:8px;">📊</div><div style="font-size:14px;">Insufficient history to compute accuracy — check back after 30 days of data</div></div>', unsafe_allow_html=True)
 else:
-    bull_returns_7d = [r["return"] for r in accuracy_data if r["signal"] == "Strong Bull" and r["period"] == "7d"]
-    bear_returns_7d = [r["return"] for r in accuracy_data if r["signal"] == "Strong Bear" and r["period"] == "7d"]
-    bull_winrate = round(sum(1 for x in bull_returns_7d if x > 0) / len(bull_returns_7d) * 100) if bull_returns_7d else None
-    bear_winrate = round(sum(1 for x in bear_returns_7d if x < 0) / len(bear_returns_7d) * 100) if bear_returns_7d else None
-    bull_avg = sum(bull_returns_7d) / len(bull_returns_7d) if bull_returns_7d else None
-    bear_avg = sum(bear_returns_7d) / len(bear_returns_7d) if bear_returns_7d else None
+    fear_returns_7d  = [r["return"] for r in accuracy_data if r["signal"] == "Fear Reversal Signal"  and r["period"] == "7d"]
+    greed_returns_7d = [r["return"] for r in accuracy_data if r["signal"] == "Greed Reversal Signal" and r["period"] == "7d"]
+    fear_winrate  = round(sum(1 for x in fear_returns_7d  if x > 0) / len(fear_returns_7d)  * 100) if fear_returns_7d  else None
+    greed_winrate = round(sum(1 for x in greed_returns_7d if x < 0) / len(greed_returns_7d) * 100) if greed_returns_7d else None
 
     _acc_cols = st.columns(4, gap="large")
     _acc_tiles = [
-        ("Strong Bull Signals",   str(len(bull_returns_7d)),                       "in last 30 days",    "#10B981"),
-        ("Bull Signal Win Rate",  f"{bull_winrate}%" if bull_winrate is not None else "—", "price up 7d later",  "#10B981"),
-        ("Strong Bear Signals",   str(len(bear_returns_7d)),                       "in last 30 days",    "#EF4444"),
-        ("Bear Signal Win Rate",  f"{bear_winrate}%" if bear_winrate is not None else "—", "price down 7d later","#EF4444"),
+        ("Fear Reversal Signals",  str(len(fear_returns_7d)),                             "in last 30 days",    "#10B981"),
+        ("Win Rate",               f"{fear_winrate}%"  if fear_winrate  is not None else "—", "price up 7d later",  "#10B981"),
+        ("Greed Reversal Signals", str(len(greed_returns_7d)),                            "in last 30 days",    "#F97316"),
+        ("Win Rate",               f"{greed_winrate}%" if greed_winrate is not None else "—", "price down 7d later","#F97316"),
     ]
     for col, (lbl, val, sub, col_) in zip(_acc_cols, _acc_tiles):
         with col:
@@ -2191,7 +2189,7 @@ else:
                 with _row[4]:
                     st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{ret_color}; font-size:13px; font-weight:700;">{ret_arrow} {abs(r["return"]):.2f}%</div>', unsafe_allow_html=True)
 
-        st.markdown('<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">Based on Fear & Greed extremes vs BTC price. Not financial advice.</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">Fear &amp; Greed used as contrarian indicator. Extreme fear historically precedes recovery. Extreme greed historically precedes correction. Not financial advice.</div>', unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WHALE ACTIVITY
