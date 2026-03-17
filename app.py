@@ -1495,9 +1495,6 @@ with right:
             blk_time   = onchain.get("minutes_between_blocks", 0)
             total_btc  = onchain.get("totalbc", 0) / 1e8
             trade_vol  = onchain.get("trade_volume_btc", 0)
-            est_btc_sent = onchain.get("estimated_btc_sent", 0) / 1e8
-            market_px_raw = onchain.get("market_price_usd", 0)
-            est_tx_usd = est_btc_sent * market_px_raw if (est_btc_sent and market_px_raw) else onchain.get("estimated_transaction_volume_usd", 0)
             market_px  = onchain.get("market_price_usd", 0)
 
             tiles = [
@@ -1538,8 +1535,8 @@ with right:
             with w2:
                 st.markdown(f"""
                 <div class="oc-tile">
-                    <div class="oc-label">Est. Transaction Volume (24h)</div>
-                    <div class="oc-value">{fmt_usd(est_tx_usd)}<span class="oc-unit">USD</span></div>
+                    <div class="oc-label">Exchange Trade Volume (24h)</div>
+                    <div class="oc-value">{trade_vol:,.1f}<span class="oc-unit">BTC</span></div>
                 </div>""", unsafe_allow_html=True)
 
             if market_px:
