@@ -553,6 +553,26 @@ def fetch_trending():
     except Exception:
         return None
 
+FRED_API_KEY = "FRED_API_KEY"
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_fred_series(series_id: str, api_key: str):
+    try:
+        url = (
+            "https://api.stlouisfed.org/fred/series/observations"
+            f"?series_id={series_id}&api_key={api_key}"
+            "&sort_order=desc&limit=1&file_type=json"
+        )
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        obs = data.get("observations", [])
+        if obs:
+            return obs[0].get("value")
+        return None
+    except Exception:
+        return None
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def fetch_crypto_news(query="crypto OR bitcoin OR ethereum"):
     try:
@@ -880,6 +900,10 @@ with st.spinner("Loading market data…"):
     eth_onchain = fetch_eth_onchain()
     trending    = fetch_trending()
     news        = fetch_crypto_news()
+    macro_dff   = fetch_fred_series("DFF",      FRED_API_KEY)
+    macro_dxy   = fetch_fred_series("DTWEXBGS", FRED_API_KEY)
+    macro_t10   = fetch_fred_series("T10YIE",   FRED_API_KEY)
+    macro_unem  = fetch_fred_series("UNRATE",   FRED_API_KEY)
     charts      = {st.session_state.selected_asset: fetch_chart(st.session_state.selected_asset)}
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1802,6 +1826,104 @@ else:
         '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
         '<div style="font-size:28px; margin-bottom:8px;">📊</div>'
         '<div style="font-size:14px;">Signal history unavailable</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MACRO INTELLIGENCE
+# ═══════════════════════════════════════════════════════════════════════════════
+st.markdown('<div class="section-header">Macro Intelligence</div>', unsafe_allow_html=True)
+
+def _safe_float(val):
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return None
+
+_dff  = _safe_float(macro_dff)
+_dxy  = _safe_float(macro_dxy)
+_t10  = _safe_float(macro_t10)
+_unem = _safe_float(macro_unem)
+
+# Dollar index color: green < 100 (weak dollar good), red > 104 (strong dollar bad)
+_dxy_color = (
+    "#10B981" if _dxy is not None and _dxy < 100 else
+    "#EF4444" if _dxy is not None and _dxy > 104 else
+    "#94A3B8"
+)
+
+_macro_tiles = [
+    (
+        "Fed Funds Rate",
+        f"{_dff:.2f}" if _dff is not None else "—",
+        "%",
+        "#94A3B8",
+        "Current interest rate target",
+    ),
+    (
+        "US Dollar Index",
+        f"{_dxy:.2f}" if _dxy is not None else "—",
+        "",
+        _dxy_color,
+        "Dollar strength vs major currencies",
+    ),
+    (
+        "10Y Inflation Expectations",
+        f"{_t10:.2f}" if _t10 is not None else "—",
+        "%",
+        "#94A3B8",
+        "Market implied inflation rate",
+    ),
+    (
+        "Unemployment Rate",
+        f"{_unem:.1f}" if _unem is not None else "—",
+        "%",
+        "#94A3B8",
+        "US labor market health",
+    ),
+]
+
+_macro_cols = st.columns(4, gap="large")
+for col, (lbl, val, unit, col_, note) in zip(_macro_cols, _macro_tiles):
+    with col:
+        st.markdown(
+            f'<div class="oc-tile">'
+            f'<div class="oc-label">{lbl}</div>'
+            f'<div class="oc-value" style="color:{col_};">{val}'
+            f'<span class="oc-unit">{unit}</span></div>'
+            f'<div style="color:#475569; font-size:11px; margin-top:6px;">{note}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+# Plain-English macro summary
+_macro_insights = []
+if _dxy is not None:
+    if _dxy > 104:
+        _macro_insights.append("Strong dollar environment is historically a headwind for crypto assets.")
+    elif _dxy < 100:
+        _macro_insights.append("Weak dollar typically supports crypto and broader risk assets.")
+if _dff is not None:
+    if _dff > 4:
+        _macro_insights.append("High rate environment increases opportunity cost of holding crypto.")
+    elif _dff < 2:
+        _macro_insights.append("Low rate environment is historically favourable for risk assets.")
+
+if _macro_insights:
+    st.markdown(
+        '<div class="intel-explanation" style="margin-top:16px; padding:16px 20px;'
+        ' background:#162032; border:1px solid #1E293B; border-radius:12px;'
+        ' color:#94A3B8; font-size:13px; line-height:1.7;">'
+        + "  ".join(f"· {s}" for s in _macro_insights)
+        + '</div>',
+        unsafe_allow_html=True,
+    )
+elif _dff is None and _dxy is None:
+    st.markdown(
+        '<div class="oc-tile" style="margin-top:12px; text-align:center;'
+        ' padding:32px 24px; color:#475569;">'
+        '<div style="font-size:14px;">Macro data unavailable — add your FRED API key to enable</div>'
         '</div>',
         unsafe_allow_html=True,
     )
