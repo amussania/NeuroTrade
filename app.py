@@ -1732,7 +1732,7 @@ with right:
         )
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# LATEST CRYPTO NEWS
+# LATEST CRYPTO NEWS  |  F&G + TRENDING
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown('<div class="section-header">Latest Crypto News</div>', unsafe_allow_html=True)
 
@@ -1761,44 +1761,91 @@ def _time_ago(published_at: str) -> str:
     except Exception:
         return ""
 
-_articles = (news or {}).get("articles", [])
-if _articles:
-    _news_cols = st.columns(2, gap="large")
-    for i, article in enumerate(_articles[:8]):
-        _title  = article.get("title") or ""
-        _source = (article.get("source") or {}).get("name", "")
-        _pub    = article.get("publishedAt", "")
-        _url    = article.get("url", "#")
-        _ago    = _time_ago(_pub)
-        _slabel, _scolor = _news_sentiment(_title)
-        with _news_cols[i % 2]:
-            st.markdown(
-                f'<div class="oc-tile" style="margin-bottom:8px;">'
-                f'<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">'
-                f'<a href="{_url}" target="_blank" rel="noopener" style="color:#4A90D9; font-size:13px;'
-                f' font-weight:600; line-height:1.4; text-decoration:none; flex:1;">{_title}</a>'
-                f'<span style="font-size:10px; font-weight:700; letter-spacing:1px; color:{_scolor};'
-                f' white-space:nowrap; margin-top:2px;">{_slabel}</span>'
-                f'</div>'
-                f'<div style="margin-top:8px; color:#6B7280; font-size:11px;">'
-                f'{_source}'
-                f'{"&nbsp;·&nbsp;" + _ago if _ago else ""}'
-                f'</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-else:
+_news_main, _news_side = st.columns([3, 1], gap="large")
+
+with _news_main:
+    _articles = (news or {}).get("articles", [])
+    if _articles:
+        _news_inner = st.columns(2, gap="large")
+        for i, article in enumerate(_articles[:8]):
+            _title  = article.get("title") or ""
+            _source = (article.get("source") or {}).get("name", "")
+            _pub    = article.get("publishedAt", "")
+            _url    = article.get("url", "#")
+            _ago    = _time_ago(_pub)
+            _slabel, _scolor = _news_sentiment(_title)
+            with _news_inner[i % 2]:
+                st.markdown(
+                    f'<div class="oc-tile" style="margin-bottom:8px;">'
+                    f'<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">'
+                    f'<a href="{_url}" target="_blank" rel="noopener" style="color:#4A90D9; font-size:13px;'
+                    f' font-weight:600; line-height:1.4; text-decoration:none; flex:1;">{_title}</a>'
+                    f'<span style="font-size:10px; font-weight:700; letter-spacing:1px; color:{_scolor};'
+                    f' white-space:nowrap; margin-top:2px;">{_slabel}</span>'
+                    f'</div>'
+                    f'<div style="margin-top:8px; color:#6B7280; font-size:11px;">'
+                    f'{_source}'
+                    f'{"&nbsp;·&nbsp;" + _ago if _ago else ""}'
+                    f'</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+    else:
+        st.markdown(
+            '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
+            '<div style="font-size:28px; margin-bottom:8px;">📰</div>'
+            '<div style="font-size:14px;">News unavailable — add your NewsAPI key to enable this section</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+with _news_side:
+    # ── Fear & Greed compact ─────────────────────────────────────────────────
+    _side_fng_val = int(fng["data"][0]["value"]) if fng and "data" in fng else None
+    _side_fng_cls = fng["data"][0]["value_classification"] if fng and "data" in fng else "—"
+    _side_fng_col = fng_color(_side_fng_val) if _side_fng_val is not None else "#94A3B8"
     st.markdown(
-        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
-        '<div style="font-size:28px; margin-bottom:8px;">📰</div>'
-        '<div style="font-size:14px;">News unavailable — add your NewsAPI key to enable this section</div>'
-        '</div>',
+        f'<div class="oc-tile" style="text-align:center; margin-bottom:8px;">'
+        f'<div class="oc-label">Fear &amp; Greed</div>'
+        f'<div class="oc-value" style="color:{_side_fng_col}; font-size:36px; font-weight:800;">'
+        f'{_side_fng_val if _side_fng_val is not None else "—"}</div>'
+        f'<div style="color:{_side_fng_col}; font-size:11px; font-weight:700; letter-spacing:1px; margin-top:4px;">'
+        f'{_side_fng_cls.upper()}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+    # ── Trending Status compact ──────────────────────────────────────────────
+    if trending is None:
+        _side_trend_html = (
+            '<div class="oc-label">Trending Status</div>'
+            '<div class="oc-value" style="color:#475569; font-size:16px;">Unavailable</div>'
+            '<div style="color:#475569; font-size:11px; margin-top:6px;">CoinGecko search ranking</div>'
+        )
+    elif selected_coin in trending:
+        _side_trend_rank = trending.index(selected_coin) + 1
+        _side_trend_html = (
+            f'<div class="oc-label">Trending Status</div>'
+            f'<div class="oc-value" style="color:#10B981; font-size:18px; font-weight:800;">🔥 TRENDING</div>'
+            f'<div style="color:#10B981; font-size:11px; font-weight:600; margin-top:4px; letter-spacing:1px;">#{_side_trend_rank} on CoinGecko</div>'
+            f'<div style="color:#475569; font-size:11px; margin-top:6px;">Updated hourly</div>'
+        )
+    else:
+        _side_trend_html = (
+            '<div class="oc-label">Trending Status</div>'
+            '<div class="oc-value" style="color:#475569; font-size:16px; font-weight:700;">NOT TRENDING</div>'
+            '<div style="color:#475569; font-size:11px; margin-top:4px;">Not in top 7 searches</div>'
+            '<div style="color:#475569; font-size:11px; margin-top:6px;">Updated hourly</div>'
+        )
+    st.markdown(
+        f'<div class="oc-tile">{_side_trend_html}</div>',
         unsafe_allow_html=True,
     )
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SIGNAL INTELLIGENCE
+# SIGNAL INTELLIGENCE  |  MACRO INTELLIGENCE
 # ═══════════════════════════════════════════════════════════════════════════════
+_sig_mac_cols = st.columns(2, gap="large")
+_sig_mac_cols[0].__enter__()
 st.markdown('<div class="section-header">Signal Intelligence</div>', unsafe_allow_html=True)
 
 _fng30_entries = (fng30 or {}).get("data", [])[:30] if fng30 else []
@@ -1867,97 +1914,8 @@ else:
         unsafe_allow_html=True,
     )
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# MARKET POSITIONING
-# ═══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-header">Market Positioning</div>', unsafe_allow_html=True)
-
-_mp_data = {}
-_mp_coins = [
-    ('bitcoin',  'BTC', '#F7931A'),
-    ('ethereum', 'ETH', '#627EEA'),
-    ('solana',   'SOL', '#9945FF'),
-]
-for _mp_coin, _mp_sym, _mp_col in _mp_coins:
-    if prices and _mp_coin in prices:
-        _p = prices[_mp_coin]
-        _mp_data[_mp_coin] = {
-            'symbol': _mp_sym,
-            'color':  _mp_col,
-            'chg_7d': None,
-            'chg_24h': _p.get('usd_24h_change', 0) or 0,
-        }
-
-for _mp_coin, _mp_sym, _mp_col in _mp_coins:
-    _df_tmp = charts.get(_mp_coin)
-    if _df_tmp is not None and not _df_tmp.empty and _mp_coin in _mp_data:
-        _chg = ((_df_tmp['price'].iloc[-1] / _df_tmp['price'].iloc[0]) - 1) * 100
-        _mp_data[_mp_coin]['chg_7d'] = _chg
-
-_mp_cols = st.columns(3, gap="large")
-for col, (_mp_coin, _mp_sym, _mp_col) in zip(_mp_cols, _mp_coins):
-    with col:
-        if _mp_coin in _mp_data:
-            d = _mp_data[_mp_coin]
-            chg_24h = d['chg_24h']
-            chg_7d  = d['chg_7d']
-            chg_24h_color = "#10B981" if chg_24h >= 0 else "#EF4444"
-            chg_7d_color  = "#10B981" if (chg_7d or 0) >= 0 else "#EF4444"
-
-            if (chg_7d or 0) > 10:
-                pos_label, pos_color = "STRONG BULL", "#10B981"
-            elif (chg_7d or 0) > 2:
-                pos_label, pos_color = "WEAK BULL",   "#84CC16"
-            elif (chg_7d or 0) > -2:
-                pos_label, pos_color = "NEUTRAL",     "#94A3B8"
-            elif (chg_7d or 0) > -10:
-                pos_label, pos_color = "WEAK BEAR",   "#F97316"
-            else:
-                pos_label, pos_color = "STRONG BEAR", "#EF4444"
-
-            fng_val = int(fng["data"][0]["value"]) if fng and "data" in fng else 50
-            if fng_val <= 25:
-                sent_label, sent_color = "EXTREME FEAR", "#EF4444"
-            elif fng_val <= 45:
-                sent_label, sent_color = "FEAR",         "#F97316"
-            elif fng_val <= 55:
-                sent_label, sent_color = "NEUTRAL",      "#94A3B8"
-            elif fng_val <= 75:
-                sent_label, sent_color = "GREED",        "#84CC16"
-            else:
-                sent_label, sent_color = "EXTREME GREED","#10B981"
-
-            st.markdown(
-                f'<div class="oc-tile">'
-                f'<div class="oc-label" style="color:{_mp_col}; font-size:13px; margin-bottom:14px;">'
-                f'{_mp_sym} · Positioning</div>'
-                f'<div style="display:flex; flex-direction:column; gap:10px;">'
-                f'<div style="display:flex; justify-content:space-between; align-items:center;">'
-                f'<span style="color:var(--text-dim); font-size:12px;">24h Return</span>'
-                f'<span style="color:{chg_24h_color}; font-weight:700; font-size:13px;">'
-                f'{chg_24h:+.2f}%</span></div>'
-                f'<div style="display:flex; justify-content:space-between; align-items:center;">'
-                f'<span style="color:var(--text-dim); font-size:12px;">7-Day Return</span>'
-                f'<span style="color:{chg_7d_color}; font-weight:700; font-size:13px;">'
-                f'{"—" if chg_7d is None else f"{chg_7d:+.2f}%"}</span></div>'
-                f'<div style="display:flex; justify-content:space-between; align-items:center; '
-                f'padding-top:10px; border-top:1px solid var(--border);">'
-                f'<span style="color:var(--text-dim); font-size:12px;">7-Day Signal</span>'
-                f'<span style="color:{pos_color}; font-weight:700; font-size:11px; '
-                f'letter-spacing:1px;">{pos_label}</span></div>'
-                f'<div style="display:flex; justify-content:space-between; align-items:center;">'
-                f'<span style="color:var(--text-dim); font-size:12px;">Market Sentiment</span>'
-                f'<span style="color:{sent_color}; font-weight:700; font-size:11px; '
-                f'letter-spacing:1px;">{sent_label}</span></div>'
-                f'</div></div>',
-                unsafe_allow_html=True,
-            )
-
-st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# MACRO INTELLIGENCE
-# ═══════════════════════════════════════════════════════════════════════════════
+_sig_mac_cols[0].__exit__(None, None, None)
+_sig_mac_cols[1].__enter__()
 st.markdown('<div class="section-header">Macro Intelligence</div>', unsafe_allow_html=True)
 
 def _safe_float(val):
@@ -2053,9 +2011,13 @@ elif _dff is None and _dxy is None:
         unsafe_allow_html=True,
     )
 
+_sig_mac_cols[1].__exit__(None, None, None)
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# SIGNAL BACKTESTING
+# PRICE VS SENTIMENT HISTORY  |  SIGNAL ACCURACY TRACKER
 # ═══════════════════════════════════════════════════════════════════════════════
+_pvs_sat_cols = st.columns(2, gap="large")
+_pvs_sat_cols[0].__enter__()
 st.markdown('<div class="section-header">Price vs Sentiment History</div>', unsafe_allow_html=True)
 
 try:
@@ -2178,9 +2140,8 @@ except Exception:
         unsafe_allow_html=True,
     )
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# SIGNAL ACCURACY TRACKER
-# ═══════════════════════════════════════════════════════════════════════════════
+_pvs_sat_cols[0].__exit__(None, None, None)
+_pvs_sat_cols[1].__enter__()
 st.markdown('<div class="section-header">Signal Accuracy Tracker</div>', unsafe_allow_html=True)
 
 accuracy_data = compute_accuracy_tracker(btc_yearly, fng30)
@@ -2240,9 +2201,13 @@ else:
 
         st.markdown('<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">Fear &amp; Greed used as contrarian indicator. Extreme fear historically precedes recovery. Extreme greed historically precedes correction. Not financial advice.</div>', unsafe_allow_html=True)
 
+_pvs_sat_cols[1].__exit__(None, None, None)
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# WHALE ACTIVITY
+# WHALE ACTIVITY  |  MARKET POSITIONING
 # ═══════════════════════════════════════════════════════════════════════════════
+_whale_pos_cols = st.columns(2, gap="large")
+_whale_pos_cols[0].__enter__()
 st.markdown('<div class="section-header">Whale Activity</div>', unsafe_allow_html=True)
 
 if whale_txs is None:
@@ -2347,6 +2312,88 @@ else:
         'Showing unconfirmed BTC transactions over 10 BTC. Updates every 5 minutes.</div>',
         unsafe_allow_html=True,
     )
+
+_whale_pos_cols[0].__exit__(None, None, None)
+_whale_pos_cols[1].__enter__()
+
+# ── Market Positioning (right column of Whale/MP pair) ────────────────────────
+st.markdown('<div class="section-header">Market Positioning</div>', unsafe_allow_html=True)
+
+_mp_data = {}
+_mp_coins = [
+    ('bitcoin',  'BTC', '#F7931A'),
+    ('ethereum', 'ETH', '#627EEA'),
+    ('solana',   'SOL', '#9945FF'),
+]
+for _mp_coin, _mp_sym, _mp_col in _mp_coins:
+    if prices and _mp_coin in prices:
+        _p = prices[_mp_coin]
+        _mp_data[_mp_coin] = {
+            'symbol':  _mp_sym,
+            'color':   _mp_col,
+            'chg_7d':  None,
+            'chg_24h': _p.get('usd_24h_change', 0) or 0,
+        }
+
+for _mp_coin, _mp_sym, _mp_col in _mp_coins:
+    _df_tmp = charts.get(_mp_coin)
+    if _df_tmp is not None and not _df_tmp.empty and _mp_coin in _mp_data:
+        _chg = ((_df_tmp['price'].iloc[-1] / _df_tmp['price'].iloc[0]) - 1) * 100
+        _mp_data[_mp_coin]['chg_7d'] = _chg
+
+_mp_fng_val = int(fng["data"][0]["value"]) if fng and "data" in fng else 50
+if _mp_fng_val <= 25:
+    _mp_sent_label, _mp_sent_color = "EXTREME FEAR", "#EF4444"
+elif _mp_fng_val <= 45:
+    _mp_sent_label, _mp_sent_color = "FEAR",         "#F97316"
+elif _mp_fng_val <= 55:
+    _mp_sent_label, _mp_sent_color = "NEUTRAL",      "#94A3B8"
+elif _mp_fng_val <= 75:
+    _mp_sent_label, _mp_sent_color = "GREED",        "#84CC16"
+else:
+    _mp_sent_label, _mp_sent_color = "EXTREME GREED","#10B981"
+
+for _mp_coin, _mp_sym, _mp_col in _mp_coins:
+    if _mp_coin in _mp_data:
+        d = _mp_data[_mp_coin]
+        chg_24h = d['chg_24h']
+        chg_7d  = d['chg_7d']
+        chg_24h_color = "#10B981" if chg_24h >= 0 else "#EF4444"
+        chg_7d_color  = "#10B981" if (chg_7d or 0) >= 0 else "#EF4444"
+        if (chg_7d or 0) > 10:
+            pos_label, pos_color = "STRONG BULL", "#10B981"
+        elif (chg_7d or 0) > 2:
+            pos_label, pos_color = "WEAK BULL",   "#84CC16"
+        elif (chg_7d or 0) > -2:
+            pos_label, pos_color = "NEUTRAL",     "#94A3B8"
+        elif (chg_7d or 0) > -10:
+            pos_label, pos_color = "WEAK BEAR",   "#F97316"
+        else:
+            pos_label, pos_color = "STRONG BEAR", "#EF4444"
+        st.markdown(
+            f'<div class="oc-tile" style="margin-bottom:8px;">'
+            f'<div class="oc-label" style="color:{_mp_col}; font-size:13px; margin-bottom:10px;">'
+            f'{_mp_sym} · Positioning</div>'
+            f'<div style="display:flex; flex-direction:column; gap:8px;">'
+            f'<div style="display:flex; justify-content:space-between; align-items:center;">'
+            f'<span style="color:var(--text-dim); font-size:12px;">24h Return</span>'
+            f'<span style="color:{chg_24h_color}; font-weight:700; font-size:13px;">{chg_24h:+.2f}%</span></div>'
+            f'<div style="display:flex; justify-content:space-between; align-items:center;">'
+            f'<span style="color:var(--text-dim); font-size:12px;">7-Day Return</span>'
+            f'<span style="color:{chg_7d_color}; font-weight:700; font-size:13px;">'
+            f'{"—" if chg_7d is None else f"{chg_7d:+.2f}%"}</span></div>'
+            f'<div style="display:flex; justify-content:space-between; align-items:center; '
+            f'padding-top:8px; border-top:1px solid var(--border);">'
+            f'<span style="color:var(--text-dim); font-size:12px;">7-Day Signal</span>'
+            f'<span style="color:{pos_color}; font-weight:700; font-size:11px; letter-spacing:1px;">{pos_label}</span></div>'
+            f'<div style="display:flex; justify-content:space-between; align-items:center;">'
+            f'<span style="color:var(--text-dim); font-size:12px;">Market Sentiment</span>'
+            f'<span style="color:{_mp_sent_color}; font-weight:700; font-size:11px; letter-spacing:1px;">{_mp_sent_label}</span></div>'
+            f'</div></div>',
+            unsafe_allow_html=True,
+        )
+
+_whale_pos_cols[1].__exit__(None, None, None)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WAITLIST
