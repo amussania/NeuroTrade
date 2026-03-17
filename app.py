@@ -1522,7 +1522,7 @@ with right:
                     unsafe_allow_html=True)
 
         if onchain:
-            hash_rate  = onchain.get("hash_rate", 0) / 1e9
+            hash_rate  = onchain.get("hash_rate", 0) / 1e18
             difficulty = onchain.get("difficulty", 0) / 1e12
             n_tx       = onchain.get("n_tx", 0)
             blk_time   = onchain.get("minutes_between_blocks", 0)
@@ -1531,7 +1531,7 @@ with right:
             market_px  = onchain.get("market_price_usd", 0)
 
             tiles = [
-                ("Hash Rate",          f"{hash_rate:.2f}",   "EH/s"),
+                ("Hash Rate",          f"{hash_rate:.2f}",   "EH/s · Exahash"),
                 ("Mining Difficulty",  f"{difficulty:.2f}T", ""),
                 ("Transactions Today", f"{n_tx:,}",          ""),
                 ("Avg Block Time",     f"{blk_time:.1f}",    "min"),
@@ -1931,8 +1931,9 @@ _unem = _safe_float(macro_unem)
 
 # Dollar index color: green < 100 (weak dollar good), red > 104 (strong dollar bad)
 _dxy_color = (
-    "#10B981" if _dxy is not None and _dxy < 100 else
-    "#EF4444" if _dxy is not None and _dxy > 104 else
+    "#10B981" if _dxy is not None and _dxy < 115 else
+    "#EF4444" if _dxy is not None and _dxy > 120 else
+    "#F97316" if _dxy is not None and _dxy >= 115 else
     "#94A3B8"
 )
 
@@ -1949,7 +1950,7 @@ _macro_tiles = [
         f"{_dxy:.2f}" if _dxy is not None else "—",
         "",
         _dxy_color,
-        "Dollar strength vs major currencies",
+        "Broad Dollar Index · Neutral 115 · Strong 120+",
     ),
     (
         "10Y Inflation Expectations",
@@ -2105,9 +2106,9 @@ try:
     _bt_tiles = [
         ("Lowest Sentiment (30 days)",  str(_min_val),
          f"/ 100  ·  {_min_label}", fng_color(_min_val), ""),
-        ("BTC Return Since Fear Low",
+        ("BTC Return Since Lowest Sentiment Day",
          f"{_since_low_pct:+.2f}%" if _since_low_pct is not None else "—",
-         f"from ${_price_at_low:,.0f} on {_min_label}" if _price_at_low else "Price data unavailable",
+         f"BTC on lowest F&G date ({_min_label}) vs today. Not the price low." if _price_at_low else "Price data unavailable",
          _since_col, ""),
         ("Extreme Fear Days (30 days)", str(_ef_days), "/ 30 days",
          "#EF4444" if _ef_days > 5 else "#10B981",
