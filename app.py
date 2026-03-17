@@ -1522,7 +1522,8 @@ with right:
                     unsafe_allow_html=True)
 
         if onchain:
-            hash_rate  = onchain.get("hash_rate", 0) / 1e18
+            hash_rate_raw = onchain.get("hash_rate", 0)
+            hash_rate  = hash_rate_raw / 1e9
             difficulty = onchain.get("difficulty", 0) / 1e12
             n_tx       = onchain.get("n_tx", 0)
             blk_time   = onchain.get("minutes_between_blocks", 0)
@@ -1531,7 +1532,7 @@ with right:
             market_px  = onchain.get("market_price_usd", 0)
 
             tiles = [
-                ("Hash Rate",          f"{hash_rate:.2f}",   "EH/s · Exahash"),
+                ("Hash Rate",          f"{hash_rate:.0f}",   "EH/s"),
                 ("Mining Difficulty",  f"{difficulty:.2f}T", ""),
                 ("Transactions Today", f"{n_tx:,}",          ""),
                 ("Avg Block Time",     f"{blk_time:.1f}",    "min"),
