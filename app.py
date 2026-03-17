@@ -1868,6 +1868,94 @@ else:
     )
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# MARKET POSITIONING
+# ═══════════════════════════════════════════════════════════════════════════════
+st.markdown('<div class="section-header">Market Positioning</div>', unsafe_allow_html=True)
+
+_mp_data = {}
+_mp_coins = [
+    ('bitcoin',  'BTC', '#F7931A'),
+    ('ethereum', 'ETH', '#627EEA'),
+    ('solana',   'SOL', '#9945FF'),
+]
+for _mp_coin, _mp_sym, _mp_col in _mp_coins:
+    if prices and _mp_coin in prices:
+        _p = prices[_mp_coin]
+        _mp_data[_mp_coin] = {
+            'symbol': _mp_sym,
+            'color':  _mp_col,
+            'chg_7d': None,
+            'chg_24h': _p.get('usd_24h_change', 0) or 0,
+        }
+
+for _mp_coin, _mp_sym, _mp_col in _mp_coins:
+    _df_tmp = charts.get(_mp_coin)
+    if _df_tmp is not None and not _df_tmp.empty and _mp_coin in _mp_data:
+        _chg = ((_df_tmp['price'].iloc[-1] / _df_tmp['price'].iloc[0]) - 1) * 100
+        _mp_data[_mp_coin]['chg_7d'] = _chg
+
+_mp_cols = st.columns(3, gap="large")
+for col, (_mp_coin, _mp_sym, _mp_col) in zip(_mp_cols, _mp_coins):
+    with col:
+        if _mp_coin in _mp_data:
+            d = _mp_data[_mp_coin]
+            chg_24h = d['chg_24h']
+            chg_7d  = d['chg_7d']
+            chg_24h_color = "#10B981" if chg_24h >= 0 else "#EF4444"
+            chg_7d_color  = "#10B981" if (chg_7d or 0) >= 0 else "#EF4444"
+
+            if (chg_7d or 0) > 10:
+                pos_label, pos_color = "STRONG BULL", "#10B981"
+            elif (chg_7d or 0) > 2:
+                pos_label, pos_color = "WEAK BULL",   "#84CC16"
+            elif (chg_7d or 0) > -2:
+                pos_label, pos_color = "NEUTRAL",     "#94A3B8"
+            elif (chg_7d or 0) > -10:
+                pos_label, pos_color = "WEAK BEAR",   "#F97316"
+            else:
+                pos_label, pos_color = "STRONG BEAR", "#EF4444"
+
+            fng_val = int(fng["data"][0]["value"]) if fng and "data" in fng else 50
+            if fng_val <= 25:
+                sent_label, sent_color = "EXTREME FEAR", "#EF4444"
+            elif fng_val <= 45:
+                sent_label, sent_color = "FEAR",         "#F97316"
+            elif fng_val <= 55:
+                sent_label, sent_color = "NEUTRAL",      "#94A3B8"
+            elif fng_val <= 75:
+                sent_label, sent_color = "GREED",        "#84CC16"
+            else:
+                sent_label, sent_color = "EXTREME GREED","#10B981"
+
+            st.markdown(
+                f'<div class="oc-tile">'
+                f'<div class="oc-label" style="color:{_mp_col}; font-size:13px; margin-bottom:14px;">'
+                f'{_mp_sym} · Positioning</div>'
+                f'<div style="display:flex; flex-direction:column; gap:10px;">'
+                f'<div style="display:flex; justify-content:space-between; align-items:center;">'
+                f'<span style="color:var(--text-dim); font-size:12px;">24h Return</span>'
+                f'<span style="color:{chg_24h_color}; font-weight:700; font-size:13px;">'
+                f'{chg_24h:+.2f}%</span></div>'
+                f'<div style="display:flex; justify-content:space-between; align-items:center;">'
+                f'<span style="color:var(--text-dim); font-size:12px;">7-Day Return</span>'
+                f'<span style="color:{chg_7d_color}; font-weight:700; font-size:13px;">'
+                f'{"—" if chg_7d is None else f"{chg_7d:+.2f}%"}</span></div>'
+                f'<div style="display:flex; justify-content:space-between; align-items:center; '
+                f'padding-top:10px; border-top:1px solid var(--border);">'
+                f'<span style="color:var(--text-dim); font-size:12px;">7-Day Signal</span>'
+                f'<span style="color:{pos_color}; font-weight:700; font-size:11px; '
+                f'letter-spacing:1px;">{pos_label}</span></div>'
+                f'<div style="display:flex; justify-content:space-between; align-items:center;">'
+                f'<span style="color:var(--text-dim); font-size:12px;">Market Sentiment</span>'
+                f'<span style="color:{sent_color}; font-weight:700; font-size:11px; '
+                f'letter-spacing:1px;">{sent_label}</span></div>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
+
+st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # MACRO INTELLIGENCE
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown('<div class="section-header">Macro Intelligence</div>', unsafe_allow_html=True)
