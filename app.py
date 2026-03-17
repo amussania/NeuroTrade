@@ -1495,7 +1495,9 @@ with right:
             blk_time   = onchain.get("minutes_between_blocks", 0)
             total_btc  = onchain.get("totalbc", 0) / 1e8
             trade_vol  = onchain.get("trade_volume_btc", 0)
-            est_tx_usd = onchain.get("estimated_transaction_volume_usd", 0)
+            est_btc_sent = onchain.get("estimated_btc_sent", 0) / 1e8
+            market_px_raw = onchain.get("market_price_usd", 0)
+            est_tx_usd = est_btc_sent * market_px_raw if (est_btc_sent and market_px_raw) else onchain.get("estimated_transaction_volume_usd", 0)
             market_px  = onchain.get("market_price_usd", 0)
 
             tiles = [
