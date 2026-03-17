@@ -573,6 +573,24 @@ def fetch_fred_series(series_id: str, api_key: str):
     except Exception:
         return None
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_btc_yearly():
+    try:
+        url = (
+            "https://api.coingecko.com/api/v3/coins/bitcoin"
+            "/market_chart?vs_currency=usd&days=365"
+        )
+        r = requests.get(url, timeout=20, headers=HEADERS)
+        r.raise_for_status()
+        data = r.json()
+        if "prices" not in data:
+            return None
+        df = pd.DataFrame(data["prices"], columns=["ts", "price"])
+        df["ts"] = pd.to_datetime(df["ts"], unit="ms")
+        return df
+    except Exception:
+        return None
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def fetch_crypto_news(query="crypto OR bitcoin OR ethereum"):
     try:
@@ -900,6 +918,7 @@ with st.spinner("Loading market data…"):
     eth_onchain = fetch_eth_onchain()
     trending    = fetch_trending()
     news        = fetch_crypto_news()
+    btc_yearly  = fetch_btc_yearly()
     macro_dff   = fetch_fred_series("DFF",      FRED_API_KEY)
     macro_dxy   = fetch_fred_series("DTWEXBGS", FRED_API_KEY)
     macro_t10   = fetch_fred_series("T10YIE",   FRED_API_KEY)
@@ -1923,6 +1942,140 @@ elif _dff is None and _dxy is None:
         '<div class="oc-tile" style="margin-top:12px; text-align:center;'
         ' padding:32px 24px; color:#475569;">'
         '<div style="font-size:14px;">Macro data unavailable — add your FRED API key to enable</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIGNAL BACKTESTING
+# ═══════════════════════════════════════════════════════════════════════════════
+st.markdown('<div class="section-header">Signal Backtesting</div>', unsafe_allow_html=True)
+
+_bt_fng_entries = (fng30 or {}).get("data", [])[:30] if fng30 else []
+
+if btc_yearly is not None and not btc_yearly.empty and _bt_fng_entries:
+
+    # ── Build dual-axis chart ────────────────────────────────────────────────
+    _fng_dates  = [datetime.utcfromtimestamp(int(e["timestamp"])) for e in reversed(_bt_fng_entries)]
+    _fng_values = [int(e["value"]) for e in reversed(_bt_fng_entries)]
+    _fng_colors = [fng_color(v) for v in _fng_values]
+
+    _bt_fig = go.Figure()
+
+    # BTC price area (left axis)
+    _bt_fig.add_trace(go.Scatter(
+        x=btc_yearly["ts"], y=btc_yearly["price"],
+        mode="lines",
+        name="BTC Price",
+        line=dict(color="#F7931A", width=2),
+        fill="tozeroy",
+        fillcolor="rgba(247,147,26,0.10)",
+        yaxis="y1",
+        hovertemplate="$%{y:,.0f}<extra>BTC Price</extra>",
+    ))
+
+    # F&G line (right axis)
+    _bt_fig.add_trace(go.Scatter(
+        x=_fng_dates, y=_fng_values,
+        mode="lines+markers",
+        name="Fear & Greed",
+        line=dict(color="#00D4FF", width=2, dash="dot"),
+        marker=dict(color=_fng_colors, size=6, line=dict(width=0)),
+        yaxis="y2",
+        hovertemplate="%{y}<extra>Fear & Greed</extra>",
+    ))
+
+    _bt_fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=8, r=60, t=16, b=8),
+        height=320,
+        showlegend=True,
+        legend=dict(orientation="h", x=0, y=1.08,
+                    font=dict(color="#94A3B8", size=11, family="Inter")),
+        hovermode="x unified",
+        xaxis=dict(
+            showgrid=False, showline=False,
+            tickfont=dict(color="#64748B", size=10, family="Inter"),
+        ),
+        yaxis=dict(
+            title="BTC Price (USD)",
+            titlefont=dict(color="#F7931A", size=11),
+            tickfont=dict(color="#F7931A", size=10, family="Inter"),
+            tickprefix="$", tickformat=",.0f",
+            showgrid=True, gridcolor="#E2E8F0", gridwidth=1,
+            zeroline=False,
+        ),
+        yaxis2=dict(
+            title="Fear & Greed",
+            titlefont=dict(color="#00D4FF", size=11),
+            tickfont=dict(color="#00D4FF", size=10, family="Inter"),
+            overlaying="y", side="right",
+            range=[0, 100],
+            showgrid=False, zeroline=False,
+        ),
+    )
+    st.plotly_chart(_bt_fig, use_container_width=True, config={"displayModeBar": False})
+
+    # ── Insight tiles ────────────────────────────────────────────────────────
+    # Find date + value of lowest F&G in last 30 days
+    _min_idx   = _fng_values.index(min(_fng_values))
+    _min_val   = _fng_values[_min_idx]
+    _min_date  = _fng_dates[_min_idx]
+    _min_label = _min_date.strftime("%b %d, %Y")
+
+    # BTC price on that date from yearly data
+    _bt_price_df = btc_yearly.copy()
+    _bt_price_df["diff"] = (_bt_price_df["ts"] - _min_date).abs()
+    _price_at_low = _bt_price_df.loc[_bt_price_df["diff"].idxmin(), "price"]
+    _price_today  = btc_yearly["price"].iloc[-1]
+    _since_low_pct = ((_price_today / _price_at_low) - 1) * 100 if _price_at_low else None
+    _since_col = "#10B981" if (_since_low_pct or 0) >= 0 else "#EF4444"
+
+    # Extreme fear days
+    _ef_days = sum(1 for v in _fng_values if v <= 25)
+
+    _bt_cols = st.columns(3, gap="large")
+    _bt_tile_data = [
+        (
+            "Lowest Sentiment (30 days)",
+            str(_min_val),
+            f"/ 100  ·  {_min_label}",
+            fng_color(_min_val),
+            "",
+        ),
+        (
+            "BTC Return Since Fear Low",
+            f"{_since_low_pct:+.2f}%" if _since_low_pct is not None else "—",
+            f"from ${_price_at_low:,.0f} on {_min_label}",
+            _since_col,
+            "",
+        ),
+        (
+            "Extreme Fear Days (30 days)",
+            str(_ef_days),
+            "/ 30 days",
+            "#EF4444" if _ef_days > 5 else "#10B981",
+            "Historically strong accumulation zone",
+        ),
+    ]
+    for col, (lbl, val, sub, col_, note) in zip(_bt_cols, _bt_tile_data):
+        with col:
+            st.markdown(
+                f'<div class="oc-tile">'
+                f'<div class="oc-label">{lbl}</div>'
+                f'<div class="oc-value" style="color:{col_}; font-size:28px;">{val}</div>'
+                f'<div style="color:#64748B; font-size:11px; margin-top:4px;">{sub}</div>'
+                + (f'<div style="color:#475569; font-size:11px; margin-top:6px;'
+                   f' font-style:italic;">{note}</div>' if note else '')
+                + '</div>',
+                unsafe_allow_html=True,
+            )
+else:
+    st.markdown(
+        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
+        '<div style="font-size:28px; margin-bottom:8px;">📈</div>'
+        '<div style="font-size:14px;">Backtesting data loading — chart will appear shortly</div>'
         '</div>',
         unsafe_allow_html=True,
     )
