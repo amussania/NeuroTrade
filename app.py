@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from datetime import datetime
 import csv
 import os
@@ -1951,115 +1952,105 @@ elif _dff is None and _dxy is None:
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown('<div class="section-header">Signal Backtesting</div>', unsafe_allow_html=True)
 
-_bt_fng_entries = (fng30 or {}).get("data", [])[:30] if fng30 else []
+try:
+    _bt_fng_entries = (fng30 or {}).get("data", [])[:30] if fng30 else []
 
-if btc_yearly is not None and not btc_yearly.empty and _bt_fng_entries:
+    if not _bt_fng_entries:
+        raise ValueError("No F&G data")
 
-    # ── Build dual-axis chart ────────────────────────────────────────────────
     _fng_dates  = [datetime.utcfromtimestamp(int(e["timestamp"])) for e in reversed(_bt_fng_entries)]
     _fng_values = [int(e["value"]) for e in reversed(_bt_fng_entries)]
     _fng_colors = [fng_color(v) for v in _fng_values]
 
-    _bt_fig = go.Figure()
+    # Use yearly data if available, else fall back to the 7-day selected chart
+    _price_df = btc_yearly if (btc_yearly is not None and not btc_yearly.empty) \
+                else charts.get("bitcoin") or charts.get(selected_coin)
 
-    # BTC price area (left axis)
-    _bt_fig.add_trace(go.Scatter(
-        x=btc_yearly["ts"], y=btc_yearly["price"],
-        mode="lines",
-        name="BTC Price",
-        line=dict(color="#F7931A", width=2),
-        fill="tozeroy",
-        fillcolor="rgba(247,147,26,0.10)",
-        yaxis="y1",
-        hovertemplate="$%{y:,.0f}<extra>BTC Price</extra>",
-    ))
+    # ── Two stacked subplots (independent x-axes) ────────────────────────────
+    _bt_fig = make_subplots(
+        rows=2, cols=1,
+        shared_xaxes=False,
+        row_heights=[0.6, 0.4],
+        vertical_spacing=0.10,
+        subplot_titles=("BTC Price (USD)", "Fear & Greed Index (30 days)"),
+    )
 
-    # F&G line (right axis)
+    if _price_df is not None and not _price_df.empty:
+        _bt_fig.add_trace(go.Scatter(
+            x=_price_df["ts"], y=_price_df["price"],
+            mode="lines",
+            name="BTC Price",
+            line=dict(color="#F7931A", width=2),
+            fill="tozeroy",
+            fillcolor="rgba(247,147,26,0.10)",
+            hovertemplate="$%{y:,.0f}<extra>BTC Price</extra>",
+        ), row=1, col=1)
+
     _bt_fig.add_trace(go.Scatter(
         x=_fng_dates, y=_fng_values,
         mode="lines+markers",
         name="Fear & Greed",
-        line=dict(color="#00D4FF", width=2, dash="dot"),
-        marker=dict(color=_fng_colors, size=6, line=dict(width=0)),
-        yaxis="y2",
+        line=dict(color="#00D4FF", width=2),
+        marker=dict(color=_fng_colors, size=7, line=dict(width=0)),
         hovertemplate="%{y}<extra>Fear & Greed</extra>",
-    ))
+    ), row=2, col=1)
 
     _bt_fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=8, r=60, t=16, b=8),
-        height=320,
-        showlegend=True,
-        legend=dict(orientation="h", x=0, y=1.08,
-                    font=dict(color="#94A3B8", size=11, family="Inter")),
+        margin=dict(l=8, r=8, t=32, b=8),
+        height=440,
+        showlegend=False,
         hovermode="x unified",
-        xaxis=dict(
-            showgrid=False, showline=False,
-            tickfont=dict(color="#64748B", size=10, family="Inter"),
-        ),
-        yaxis=dict(
-            title="BTC Price (USD)",
-            titlefont=dict(color="#F7931A", size=11),
-            tickfont=dict(color="#F7931A", size=10, family="Inter"),
-            tickprefix="$", tickformat=",.0f",
-            showgrid=True, gridcolor="#E2E8F0", gridwidth=1,
-            zeroline=False,
-        ),
-        yaxis2=dict(
-            title="Fear & Greed",
-            titlefont=dict(color="#00D4FF", size=11),
-            tickfont=dict(color="#00D4FF", size=10, family="Inter"),
-            overlaying="y", side="right",
-            range=[0, 100],
-            showgrid=False, zeroline=False,
-        ),
+        font=dict(family="Inter", color="#64748B", size=10),
     )
+    for _ax in ("xaxis", "xaxis2"):
+        _bt_fig.update_layout(**{_ax: dict(showgrid=False, showline=False,
+                                           tickfont=dict(color="#64748B", size=10))})
+    _bt_fig.update_layout(
+        yaxis=dict(tickprefix="$", tickformat=",.0f", showgrid=True,
+                   gridcolor="#E2E8F0", zeroline=False,
+                   tickfont=dict(color="#F7931A", size=10)),
+        yaxis2=dict(range=[0, 100], showgrid=True, gridcolor="#E2E8F0",
+                    zeroline=False, tickfont=dict(color="#00D4FF", size=10)),
+    )
+    for ann in _bt_fig.layout.annotations:
+        ann.font.color = "#94A3B8"
+        ann.font.size  = 11
+
     st.plotly_chart(_bt_fig, use_container_width=True, config={"displayModeBar": False})
 
     # ── Insight tiles ────────────────────────────────────────────────────────
-    # Find date + value of lowest F&G in last 30 days
     _min_idx   = _fng_values.index(min(_fng_values))
     _min_val   = _fng_values[_min_idx]
     _min_date  = _fng_dates[_min_idx]
     _min_label = _min_date.strftime("%b %d, %Y")
 
-    # BTC price on that date from yearly data
-    _bt_price_df = btc_yearly.copy()
-    _bt_price_df["diff"] = (_bt_price_df["ts"] - _min_date).abs()
-    _price_at_low = _bt_price_df.loc[_bt_price_df["diff"].idxmin(), "price"]
-    _price_today  = btc_yearly["price"].iloc[-1]
-    _since_low_pct = ((_price_today / _price_at_low) - 1) * 100 if _price_at_low else None
+    if _price_df is not None and not _price_df.empty:
+        _bt_tmp = _price_df.copy()
+        _bt_tmp["diff"] = (_bt_tmp["ts"] - _min_date).abs()
+        _price_at_low  = _bt_tmp.loc[_bt_tmp["diff"].idxmin(), "price"]
+        _price_today   = _price_df["price"].iloc[-1]
+        _since_low_pct = ((_price_today / _price_at_low) - 1) * 100 if _price_at_low else None
+    else:
+        _price_at_low, _since_low_pct = None, None
     _since_col = "#10B981" if (_since_low_pct or 0) >= 0 else "#EF4444"
 
-    # Extreme fear days
     _ef_days = sum(1 for v in _fng_values if v <= 25)
 
     _bt_cols = st.columns(3, gap="large")
-    _bt_tile_data = [
-        (
-            "Lowest Sentiment (30 days)",
-            str(_min_val),
-            f"/ 100  ·  {_min_label}",
-            fng_color(_min_val),
-            "",
-        ),
-        (
-            "BTC Return Since Fear Low",
-            f"{_since_low_pct:+.2f}%" if _since_low_pct is not None else "—",
-            f"from ${_price_at_low:,.0f} on {_min_label}",
-            _since_col,
-            "",
-        ),
-        (
-            "Extreme Fear Days (30 days)",
-            str(_ef_days),
-            "/ 30 days",
-            "#EF4444" if _ef_days > 5 else "#10B981",
-            "Historically strong accumulation zone",
-        ),
+    _bt_tiles = [
+        ("Lowest Sentiment (30 days)",  str(_min_val),
+         f"/ 100  ·  {_min_label}", fng_color(_min_val), ""),
+        ("BTC Return Since Fear Low",
+         f"{_since_low_pct:+.2f}%" if _since_low_pct is not None else "—",
+         f"from ${_price_at_low:,.0f} on {_min_label}" if _price_at_low else "Price data unavailable",
+         _since_col, ""),
+        ("Extreme Fear Days (30 days)", str(_ef_days), "/ 30 days",
+         "#EF4444" if _ef_days > 5 else "#10B981",
+         "Historically strong accumulation zone"),
     ]
-    for col, (lbl, val, sub, col_, note) in zip(_bt_cols, _bt_tile_data):
+    for col, (lbl, val, sub, col_, note) in zip(_bt_cols, _bt_tiles):
         with col:
             st.markdown(
                 f'<div class="oc-tile">'
@@ -2071,11 +2062,12 @@ if btc_yearly is not None and not btc_yearly.empty and _bt_fng_entries:
                 + '</div>',
                 unsafe_allow_html=True,
             )
-else:
+
+except Exception:
     st.markdown(
         '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
         '<div style="font-size:28px; margin-bottom:8px;">📈</div>'
-        '<div style="font-size:14px;">Backtesting data loading — chart will appear shortly</div>'
+        '<div style="font-size:14px;">Data loading — refresh in 5 minutes</div>'
         '</div>',
         unsafe_allow_html=True,
     )
