@@ -554,7 +554,7 @@ def fetch_trending():
     except Exception:
         return None
 
-FRED_API_KEY = "767a5cb44cbff6d2abcc0f5b96f77317"
+FRED_API_KEY = st.secrets.get("FRED_API_KEY", "")
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_fred_series(series_id: str, api_key: str):
@@ -622,7 +622,7 @@ def fetch_crypto_news(query="crypto OR bitcoin OR ethereum"):
         url = (
             "https://newsapi.org/v2/everything"
             f"?q={query}&sortBy=publishedAt&pageSize=8"
-            "&language=en&apiKey=dee97ecf90624a32b779c7ef24d978e8"
+            "&language=en&apiKey={st.secrets.get("NEWS_API_KEY", "")}"
         )
         r = requests.get(url, timeout=10)
         r.raise_for_status()
