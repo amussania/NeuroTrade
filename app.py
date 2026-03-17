@@ -1744,7 +1744,7 @@ if _articles:
             st.markdown(
                 f'<div class="oc-tile" style="margin-bottom:8px;">'
                 f'<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">'
-                f'<a href="{_url}" target="_blank" rel="noopener" style="color:#E2E8F0; font-size:13px;'
+                f'<a href="{_url}" target="_blank" rel="noopener" style="color:#1A202C; font-size:13px;'
                 f' font-weight:600; line-height:1.4; text-decoration:none; flex:1;">{_title}</a>'
                 f'<span style="font-size:10px; font-weight:700; letter-spacing:1px; color:{_scolor};'
                 f' white-space:nowrap; margin-top:2px;">{_slabel}</span>'
