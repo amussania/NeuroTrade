@@ -7,7 +7,6 @@ from datetime import datetime
 import csv
 import os
 import time
-from pytrends.request import TrendReq
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -578,56 +577,30 @@ def compute_accuracy_tracker(btc_yearly, fng30):
                     })
     return results if results else None
 
-@st.cache_data(ttl=86400, show_spinner=False)
-def fetch_google_trends():
-    try:
-        pytrends = TrendReq(
-            hl='en-US',
-            tz=0,
-            timeout=(15, 30),
-            retries=3,
-            backoff_factor=1.0
-        )
-        pytrends.build_payload(
-            ['Bitcoin'],
-            timeframe='today 1-m',
-            geo=''
-        )
-        df = pytrends.interest_over_time()
-        if df is None or df.empty:
-            return None
-        df = df.drop(columns=['isPartial'], errors='ignore')
-        latest_val = int(df['Bitcoin'].iloc[-1])
-        avg_val = float(df['Bitcoin'].tail(4).mean())
-        return {
-            'bitcoin_now': latest_val,
-            'crypto_now': latest_val,
-            'bitcoin_avg': avg_val,
-            'crypto_avg': avg_val,
-            'df': df
-        }
-    except Exception:
-        return None
-
 @st.cache_data(ttl=1800, show_spinner=False)
-def fetch_funding_rates():
+def fetch_market_positioning():
     try:
-        symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
         results = {}
-        for symbol in symbols:
+        coins = ['bitcoin', 'ethereum', 'solana']
+        for coin in coins:
             url = (
-                'https://fapi.binance.com/fapi/v1/fundingRate'
-                f'?symbol={symbol}&limit=1'
+                f'https://api.coingecko.com/api/v3/coins/{coin}'
+                '?localization=false&tickers=false'
+                '&market_data=true&community_data=false'
+                '&developer_data=false'
             )
-            r = requests.get(url, timeout=10, headers=HEADERS)
+            r = requests.get(url, timeout=15, headers=HEADERS)
             r.raise_for_status()
             data = r.json()
-            if isinstance(data, list) and len(data) > 0:
-                rate = float(data[0].get('fundingRate', 0)) * 100
-            else:
-                rate = 0.0
-            results[symbol] = {'rate': rate}
-            time.sleep(0.3)
+            md = data.get('market_data', {})
+            results[coin] = {
+                'price_change_7d': md.get('price_change_percentage_7d', 0) or 0,
+                'price_change_30d': md.get('price_change_percentage_30d', 0) or 0,
+                'ath_change': md.get('ath_change_percentage', {}).get('usd', 0) or 0,
+                'market_cap_rank': data.get('market_cap_rank', 0),
+                'sentiment_votes_up': data.get('sentiment_votes_up_percentage', 0) or 0,
+            }
+            time.sleep(1)
         return results
     except Exception:
         return None
@@ -643,8 +616,7 @@ with st.spinner("Loading market data…"):
     news        = fetch_crypto_news()
     btc_yearly  = fetch_btc_yearly()
     whale_txs      = fetch_whale_transactions()
-    google_trends  = fetch_google_trends()
-    funding_rates  = fetch_funding_rates()
+    market_positioning = fetch_market_positioning()
     macro_dff   = fetch_fred_series("DFF",      FRED_API_KEY)
     macro_dxy   = fetch_fred_series("DTWEXBGS", FRED_API_KEY)
     macro_t10   = fetch_fred_series("T10YIE",   FRED_API_KEY)
@@ -1435,127 +1407,78 @@ else:
     )
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MARKET POSITIONING & ATTENTION
+# MARKET POSITIONING & SENTIMENT
 # ═══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-header">Market Positioning & Attention</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">Market Positioning & Sentiment</div>', unsafe_allow_html=True)
 
-_mp_left, _mp_right = st.columns(2, gap="large")
+if market_positioning:
+    _coins_display = [
+        ('bitcoin',  'BTC', '#F7931A'),
+        ('ethereum', 'ETH', '#627EEA'),
+        ('solana',   'SOL', '#9945FF'),
+    ]
 
-with _mp_left:
-    st.markdown('<div class="subsection-label">Google Trends · Retail Attention</div>', unsafe_allow_html=True)
-    if google_trends:
-        btc_now = google_trends['bitcoin_now']
-        btc_avg = google_trends['bitcoin_avg']
+    _mp_cols = st.columns(3, gap="large")
 
-        if btc_now >= 75:
-            gt_signal = "HIGH ATTENTION"
-            gt_color = "#EF4444"
-            gt_note = "Retail FOMO elevated. Historically precedes local tops."
-        elif btc_now >= 50:
-            gt_signal = "MODERATE"
-            gt_color = "#F97316"
-            gt_note = "Search interest above average. Monitor for spike."
-        elif btc_now >= 25:
-            gt_signal = "LOW ATTENTION"
-            gt_color = "#10B981"
-            gt_note = "Retail disinterest. Historically a quiet accumulation zone."
-        else:
-            gt_signal = "VERY LOW"
-            gt_color = "#10B981"
-            gt_note = "Minimal retail interest. Deep accumulation territory."
+    for col, (coin_key, symbol, color) in zip(_mp_cols, _coins_display):
+        with col:
+            if coin_key in market_positioning:
+                d = market_positioning[coin_key]
+                chg_7d   = d['price_change_7d']
+                chg_30d  = d['price_change_30d']
+                ath_chg  = d['ath_change']
+                votes_up = d['sentiment_votes_up']
 
-        trend_dir = "Rising" if btc_now > btc_avg else "Falling"
-        trend_color = "#EF4444" if btc_now > btc_avg else "#10B981"
+                chg_7d_color  = "#10B981" if chg_7d >= 0 else "#EF4444"
+                chg_30d_color = "#10B981" if chg_30d >= 0 else "#EF4444"
 
-        _gt_cols = st.columns(2, gap="medium")
-        with _gt_cols[0]:
-            st.markdown(
-                f'<div class="oc-tile">'
-                f'<div class="oc-label">Bitcoin Search Interest</div>'
-                f'<div class="oc-value" style="color:{gt_color};">{btc_now}'
-                f'<span class="oc-unit">/ 100</span></div>'
-                f'<div style="color:#64748B; font-size:11px; margin-top:6px;">{gt_signal}</div>'
-                f'<div style="color:#475569; font-size:11px; margin-top:4px; font-style:italic;">{gt_note}</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-        with _gt_cols[1]:
-            st.markdown(
-                f'<div class="oc-tile">'
-                f'<div class="oc-label">Trend Direction</div>'
-                f'<div class="oc-value" style="color:{trend_color}; font-size:22px;">{trend_dir}</div>'
-                f'<div style="color:#64748B; font-size:11px; margin-top:6px;">'
-                f'Now {btc_now} vs 30-day avg {btc_avg:.0f}</div>'
-                f'<div style="color:#475569; font-size:11px; margin-top:4px; font-style:italic;">'
-                f'Rising attention = caution. Falling = accumulation zone.</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-    else:
-        st.markdown(
-            '<div class="oc-tile" style="text-align:center; padding:32px; color:#475569;">'
-            '<div style="font-size:22px; margin-bottom:8px;">📈</div>'
-            '<div style="font-size:13px;">Google Trends loading — updates every 24h</div>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
+                if votes_up >= 70:
+                    sent_label = "BULLISH"
+                    sent_color = "#10B981"
+                elif votes_up >= 50:
+                    sent_label = "SLIGHT BULL"
+                    sent_color = "#84CC16"
+                elif votes_up >= 40:
+                    sent_label = "NEUTRAL"
+                    sent_color = "#94A3B8"
+                else:
+                    sent_label = "BEARISH"
+                    sent_color = "#EF4444"
 
-with _mp_right:
-    st.markdown('<div class="subsection-label">Funding Rates · Derivatives Positioning</div>', unsafe_allow_html=True)
-    if funding_rates:
-        _fr_cols = st.columns(3, gap="medium")
-        _fr_map = [
-            ('BTCUSDT', 'BTC', '#F7931A'),
-            ('ETHUSDT', 'ETH', '#627EEA'),
-            ('SOLUSDT', 'SOL', '#9945FF'),
-        ]
-        for col, (symbol, label, color) in zip(_fr_cols, _fr_map):
-            with col:
-                if symbol in funding_rates:
-                    rate = funding_rates[symbol]['rate']
-                    if rate > 0.05:
-                        fr_signal = "OVERLEVERAGED"
-                        fr_color = "#EF4444"
-                        fr_note = "Longs paying shorts. Long squeeze risk."
-                    elif rate > 0:
-                        fr_signal = "MILD LONG BIAS"
-                        fr_color = "#F97316"
-                        fr_note = "Market slightly bullish positioned."
-                    elif rate > -0.05:
-                        fr_signal = "MILD SHORT BIAS"
-                        fr_color = "#84CC16"
-                        fr_note = "Market slightly hedged. Bullish contrarian."
-                    else:
-                        fr_signal = "HEAVILY SHORTED"
-                        fr_color = "#10B981"
-                        fr_note = "Shorts paying longs. Short squeeze possible."
-
-                    st.markdown(
-                        f'<div class="oc-tile">'
-                        f'<div class="oc-label" style="color:{color};">{label} Funding</div>'
-                        f'<div class="oc-value" style="color:{fr_color}; font-size:22px;">'
-                        f'{rate:+.4f}%</div>'
-                        f'<div style="color:{fr_color}; font-size:10px; font-weight:700; '
-                        f'letter-spacing:1px; margin-top:4px;">{fr_signal}</div>'
-                        f'<div style="color:#475569; font-size:10px; margin-top:4px; '
-                        f'font-style:italic;">{fr_note}</div>'
-                        f'</div>',
-                        unsafe_allow_html=True,
-                    )
-        st.markdown(
-            '<div style="color:#475569; font-size:11px; margin-top:8px;">'
-            'Binance perpetual funding rates. Updates every 8 hours. '
-            'Positive = longs paying. Negative = shorts paying.</div>',
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            '<div class="oc-tile" style="text-align:center; padding:32px; color:#475569;">'
-            '<div style="font-size:22px; margin-bottom:8px;">📊</div>'
-            '<div style="font-size:13px;">Funding rate data unavailable</div>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
+                st.markdown(
+                    f'<div class="oc-tile">'
+                    f'<div class="oc-label" style="color:{color}; font-size:13px;">'
+                    f'{symbol} · Market Positioning</div>'
+                    f'<div style="margin-top:14px; display:flex; '
+                    f'flex-direction:column; gap:10px;">'
+                    f'<div style="display:flex; justify-content:space-between;">'
+                    f'<span style="color:#64748B; font-size:12px;">7-Day Return</span>'
+                    f'<span style="color:{chg_7d_color}; font-weight:700; '
+                    f'font-size:13px;">{chg_7d:+.2f}%</span></div>'
+                    f'<div style="display:flex; justify-content:space-between;">'
+                    f'<span style="color:#64748B; font-size:12px;">30-Day Return</span>'
+                    f'<span style="color:{chg_30d_color}; font-weight:700; '
+                    f'font-size:13px;">{chg_30d:+.2f}%</span></div>'
+                    f'<div style="display:flex; justify-content:space-between;">'
+                    f'<span style="color:#64748B; font-size:12px;">From ATH</span>'
+                    f'<span style="color:#94A3B8; font-weight:600; '
+                    f'font-size:13px;">{ath_chg:+.1f}%</span></div>'
+                    f'<div style="display:flex; justify-content:space-between; '
+                    f'margin-top:4px; padding-top:10px; border-top:1px solid var(--border);">'
+                    f'<span style="color:#64748B; font-size:12px;">Community Sentiment</span>'
+                    f'<span style="color:{sent_color}; font-weight:700; '
+                    f'font-size:11px; letter-spacing:1px;">{sent_label}</span></div>'
+                    f'</div></div>',
+                    unsafe_allow_html=True,
+                )
+else:
+    st.markdown(
+        '<div class="oc-tile" style="text-align:center; padding:48px; color:#475569;">'
+        '<div style="font-size:28px; margin-bottom:8px;">📊</div>'
+        '<div style="font-size:14px;">Market positioning data loading</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MACRO INTELLIGENCE
