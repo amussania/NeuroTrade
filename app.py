@@ -22,465 +22,9 @@ if 'theme' not in st.session_state:
 if 'selected_asset' not in st.session_state:
     st.session_state.selected_asset = 'bitcoin'
 
-# ── CSS variables theming (single codebase, dark + light) ─────────────────────
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+from neurotrade_css import NEUROTRADE_CSS, NEUROTRADE_LIGHT_CSS
+st.markdown(NEUROTRADE_CSS, unsafe_allow_html=True)
 
-/* ── DESIGN TOKENS ── */
-:root {
-    --bg-base:              #0B1120;
-    --bg-card:              #1E293B;
-    --bg-deep:              #0B1120;
-    --border:               #334155;
-    --border-hover:         #475569;
-    --text-primary:         #FFFFFF;
-    --text-secondary:       #CBD5E1;
-    --text-muted:           #94A3B8;
-    --text-dim:             #64748B;
-    --text-very-dim:        #475569;
-    --scrollbar-track:      #0B1120;
-    --scrollbar-thumb:      #334155;
-    --section-hdr-color:    #94A3B8;
-    --section-hdr-border:   #1E293B;
-    --sub-grid-border:      #334155;
-    --waitlist-bg:          linear-gradient(135deg, #0F1E38 0%, #1A1035 100%);
-    --waitlist-headline:    #FFFFFF;
-    --waitlist-sub:         #94A3B8;
-    --waitlist-point:       #CBD5E1;
-    --waitlist-counter-bg:  rgba(0,212,255,0.06);
-    --waitlist-counter-bdr: rgba(0,212,255,0.15);
-    --waitlist-counter-num: #00D4FF;
-    --waitlist-counter-lbl: #64748B;
-    --input-bg:             #1E293B;
-    --input-color:          #CBD5E1;
-    --input-border:         #334155;
-    --selectbox-bg:         #1E293B;
-    --selectbox-color:      #CBD5E1;
-    --selectbox-border:     #334155;
-}
-
-
-/* ── BASE ── */
-.main > div { zoom: 0.90; }
-
-html, body, [class*="css"], .stApp {
-    font-family: 'Inter', sans-serif !important;
-    background-color: var(--bg-base) !important;
-    color: var(--text-secondary);
-}
-
-/* Hide Streamlit chrome */
-#MainMenu, footer, header { visibility: hidden; }
-[data-testid="stToolbar"]    { display: none; }
-[data-testid="stDecoration"] { display: none; }
-[data-testid="stHeader"]     { background: transparent; }
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: var(--scrollbar-track); }
-::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
-
-/* ── SECTION HEADERS ── */
-.section-header {
-    color: var(--section-hdr-color);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin: 40px 0 20px 0;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--section-hdr-border);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.section-header::before {
-    content: '';
-    display: inline-block;
-    width: 3px;
-    height: 16px;
-    background: linear-gradient(180deg, #00d4ff, #7c3aed);
-    border-radius: 2px;
-}
-
-/* ── PRICE CARDS ── */
-.price-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 20px 20px 0 0;
-    padding: 28px 28px 22px 28px;
-    margin-bottom: 0;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
-    position: relative;
-    overflow: hidden;
-}
-.price-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--accent, #334155);
-    border-radius: 20px 20px 0 0;
-}
-.price-card:hover {
-    border-color: var(--border-hover);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-}
-
-.coin-label {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-dim);
-}
-.coin-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-}
-.coin-price {
-    font-size: 64px;
-    font-weight: 800;
-    color: var(--text-primary);
-    letter-spacing: -1.5px;
-    line-height: 1.05;
-    margin: 6px 0 10px 0;
-}
-.change-pos {
-    color: #10b981;
-    font-size: 18px;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: rgba(16,185,129,0.1);
-    padding: 3px 10px;
-    border-radius: 20px;
-}
-.change-neg {
-    color: #ef4444;
-    font-size: 18px;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: rgba(239,68,68,0.1);
-    padding: 3px 10px;
-    border-radius: 20px;
-}
-.sub-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 18px;
-    padding-top: 18px;
-    border-top: 1px solid var(--sub-grid-border);
-}
-.sub-item-label {
-    color: var(--text-dim);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-}
-.sub-item-value {
-    color: var(--text-muted);
-    font-size: 16px;
-    font-weight: 600;
-}
-
-/* ── ON-CHAIN TILES ── */
-.oc-tile {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px 24px 20px 24px;
-    transition: border-color 0.2s ease;
-}
-.oc-tile:hover { border-color: var(--border-hover); }
-.oc-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-}
-.oc-value {
-    font-size: 28px;
-    font-weight: 800;
-    color: var(--text-primary);
-    letter-spacing: -0.5px;
-    line-height: 1.1;
-}
-.oc-unit {
-    font-size: 14px;
-    color: var(--text-dim);
-    font-weight: 500;
-    margin-left: 4px;
-}
-
-/* ── F&G ── */
-.fng-label-big {
-    text-align: center;
-    font-size: 26px;
-    font-weight: 800;
-    margin-top: -8px;
-    margin-bottom: 6px;
-    letter-spacing: -0.5px;
-}
-.fng-sub {
-    text-align: center;
-    color: var(--text-very-dim);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-}
-.subsection-label {
-    color: var(--text-dim);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin: 24px 0 10px 0;
-}
-
-/* ── LIVE DOT ── */
-@keyframes pulse { 0%,100% { opacity:1; box-shadow:0 0 0 0 rgba(16,185,129,0.4); }
-                   50%      { opacity:0.7; box-shadow:0 0 0 6px rgba(16,185,129,0); } }
-.live-dot {
-    display: inline-block;
-    width: 8px; height: 8px;
-    background: #10b981;
-    border-radius: 50%;
-    margin-right: 6px;
-    animation: pulse 2.5s infinite;
-}
-
-/* ── CHART CONTAINER ── */
-.chart-wrap {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 4px;
-    overflow: hidden;
-}
-
-/* ── INTELLIGENCE SCORE ── */
-.intel-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    padding: 24px 32px 20px 32px;
-    margin: 8px 0 4px 0;
-    position: relative;
-    overflow: hidden;
-}
-.intel-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 24px;
-    background: linear-gradient(135deg, rgba(0,212,255,0.03) 0%, rgba(124,58,237,0.03) 100%);
-    pointer-events: none;
-}
-.intel-score-number {
-    font-size: 80px;
-    font-weight: 800;
-    letter-spacing: -3px;
-    line-height: 1;
-    color: var(--text-primary);
-}
-.intel-label {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    margin-top: 6px;
-    color: var(--text-primary);
-}
-.intel-explanation {
-    color: var(--text-muted);
-    font-size: 15px;
-    font-weight: 400;
-    margin-top: 8px;
-    line-height: 1.5;
-}
-.intel-bar-track {
-    background: var(--bg-deep);
-    border-radius: 999px;
-    height: 16px;
-    margin: 20px 0 8px 0;
-    overflow: hidden;
-    border: 1px solid var(--border);
-}
-.intel-bar-fill {
-    height: 100%;
-    border-radius: 999px;
-    transition: width 0.6s ease;
-}
-.intel-component {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-.intel-comp-label {
-    color: var(--text-dim);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-}
-.intel-comp-bar-track {
-    background: var(--bg-deep);
-    border-radius: 999px;
-    height: 6px;
-    overflow: hidden;
-}
-.intel-comp-bar-fill {
-    height: 100%;
-    border-radius: 999px;
-    opacity: 0.7;
-}
-.intel-comp-value {
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 600;
-    margin-top: 1px;
-}
-
-/* ── WAITLIST ── */
-.waitlist-card {
-    background: var(--waitlist-bg);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    padding: 52px 56px;
-    position: relative;
-    overflow: hidden;
-}
-.waitlist-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #00D4FF 0%, #7C3AED 50%, #F7931A 100%);
-    border-radius: 24px 24px 0 0;
-}
-.waitlist-headline {
-    font-size: 36px;
-    font-weight: 900;
-    color: var(--waitlist-headline);
-    letter-spacing: -1px;
-    line-height: 1.1;
-    margin-bottom: 16px;
-}
-.waitlist-sub {
-    font-size: 16px;
-    color: var(--waitlist-sub);
-    line-height: 1.7;
-    margin-bottom: 32px;
-    max-width: 520px;
-}
-.waitlist-value-point {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 14px;
-    font-size: 15px;
-    color: var(--waitlist-point);
-    font-weight: 500;
-}
-.waitlist-check {
-    width: 20px;
-    height: 20px;
-    background: linear-gradient(135deg, #00D4FF, #7C3AED);
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-top: 1px;
-    font-size: 11px;
-    color: #FFFFFF;
-    font-weight: 700;
-}
-.waitlist-counter-box {
-    background: var(--waitlist-counter-bg);
-    border: 1px solid var(--waitlist-counter-bdr);
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin-top: 24px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-.waitlist-counter-num {
-    font-size: 32px;
-    font-weight: 900;
-    color: var(--waitlist-counter-num);
-    letter-spacing: -1px;
-    line-height: 1;
-}
-.waitlist-counter-label {
-    color: var(--waitlist-counter-lbl);
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.4;
-}
-.waitlist-urgency {
-    color: var(--text-dim);
-    font-size: 12px;
-    font-weight: 500;
-    text-align: center;
-    margin-top: 12px;
-    letter-spacing: 0.2px;
-}
-
-/* ── SELECTBOX ── */
-[data-testid="stSelectbox"] > div > div,
-div[data-baseweb="select"] > div {
-    background-color: var(--selectbox-bg) !important;
-    color: var(--selectbox-color) !important;
-    border-color: var(--selectbox-border) !important;
-}
-div[data-baseweb="select"] * { color: var(--selectbox-color) !important; }
-div[data-baseweb="select"] svg { fill: var(--text-dim) !important; }
-div[data-baseweb="popover"],
-div[data-baseweb="menu"] { background-color: var(--selectbox-bg) !important; }
-div[data-baseweb="option"] {
-    background-color: var(--selectbox-bg) !important;
-    color: var(--selectbox-color) !important;
-}
-div[data-baseweb="option"]:hover { background-color: var(--bg-deep) !important; }
-li[role="option"] {
-    background-color: var(--selectbox-bg) !important;
-    color: var(--selectbox-color) !important;
-}
-li[role="option"]:hover { background-color: var(--bg-deep) !important; }
-
-/* ── EMAIL INPUT ── */
-[data-testid="stTextInput"] > div > div > input,
-[data-testid="stTextInput"] > div > div {
-    background-color: var(--input-bg) !important;
-    color: var(--input-color) !important;
-    border-color: var(--input-border) !important;
-}
-
-/* Streamlit form element overrides */
-div[data-testid="stForm"] {
-    border: none !important;
-    padding: 0 !important;
-    background: transparent !important;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # ── Auto-refresh: 1 s tick drives the countdown timer; cached data re-fetches
 # ── only when TTLs expire (600 s), so the frequent reruns are lightweight.
@@ -781,7 +325,7 @@ def make_price_chart(df, meta):
                 f"{arrow} {abs(chg):.2f}%</span>"
                 f"  <span style='color:#475569;font-size:12px'>7 days</span>"
             ),
-            font=dict(size=15, family="Inter"),
+            font=dict(size=15, family="DM Sans"),
             x=0.02, xanchor="left",
         ),
         xaxis=dict(
@@ -790,7 +334,7 @@ def make_price_chart(df, meta):
             gridwidth=1,
             showline=False,
             zeroline=False,
-            tickfont=dict(size=11, color="#94A3B8", family="Inter"),
+            tickfont=dict(size=11, color="#94A3B8", family="DM Sans"),
             tickformat="%b %d",
         ),
         yaxis=dict(
@@ -799,7 +343,7 @@ def make_price_chart(df, meta):
             gridwidth=1,
             showline=False,
             zeroline=False,
-            tickfont=dict(size=11, color="#94A3B8", family="Inter"),
+            tickfont=dict(size=11, color="#94A3B8", family="DM Sans"),
             tickprefix="$",
             tickformat=",.0f" if is_large else ",.2f",
             side="right",
@@ -811,7 +355,7 @@ def make_fng_gauge(value, color):
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=value,
-        number=dict(font=dict(size=52, color=color, family="Inter"), suffix=""),
+        number=dict(font=dict(size=52, color=color, family="DM Sans"), suffix=""),
         gauge=dict(
             axis=dict(range=[0, 100], visible=False),
             bar=dict(color=color, thickness=0.3),
@@ -837,7 +381,7 @@ def make_fng_gauge(value, color):
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         height=210,
-        font=dict(family="Inter"),
+        font=dict(family="DM Sans"),
     )
     return fig
 
@@ -853,7 +397,7 @@ def make_fng_history(fng_data):
         marker_line_width=0,
         text=values,
         textposition="outside",
-        textfont=dict(size=12, color="#94A3B8", family="Inter"),
+        textfont=dict(size=12, color="#94A3B8", family="DM Sans"),
         hovertemplate="%{x}: <b>%{y}</b><extra></extra>",
     ))
     fig.update_layout(
@@ -863,7 +407,7 @@ def make_fng_history(fng_data):
         xaxis=dict(
             showgrid=False,
             showline=False,
-            tickfont=dict(color="#94A3B8", size=11, family="Inter"),
+            tickfont=dict(color="#94A3B8", size=11, family="DM Sans"),
         ),
         yaxis=dict(range=[0, 120], visible=False),
         height=160,
@@ -900,13 +444,13 @@ def make_fng_line_30(fng_data):
         showlegend=False,
         hovermode="x unified",
         xaxis=dict(showgrid=False, showline=False,
-                   tickfont=dict(color="#94A3B8", size=10, family="Inter"),
+                   tickfont=dict(color="#94A3B8", size=10, family="DM Sans"),
                    tickmode="array",
                    tickvals=dates[::5],
                    ticktext=dates[::5]),
         yaxis=dict(range=[0, 100], showgrid=True, gridcolor="rgba(128,128,128,0.15)",
                    gridwidth=1, zeroline=False,
-                   tickfont=dict(color="#94A3B8", size=10, family="Inter")),
+                   tickfont=dict(color="#94A3B8", size=10, family="DM Sans")),
     )
     return fig
 
@@ -1106,41 +650,7 @@ with col_ts:
 
 # ── Override CSS variables for light mode ─────────────────────────────────────
 if st.session_state.theme == "light":
-    st.markdown("""
-    <style>
-    :root {
-        --bg-base:              #F0F4F8;
-        --bg-card:              #FFFFFF;
-        --bg-deep:              #E2E8F0;
-        --border:               #CBD5E1;
-        --border-hover:         #94A3B8;
-        --text-primary:         #0F172A;
-        --text-secondary:       #374151;
-        --text-muted:           #374151;
-        --text-dim:             #64748B;
-        --text-very-dim:        #64748B;
-        --scrollbar-track:      #E2E8F0;
-        --scrollbar-thumb:      #94A3B8;
-        --section-hdr-color:    #1F2937;
-        --section-hdr-border:   #CBD5E1;
-        --sub-grid-border:      #CBD5E1;
-        --waitlist-bg:          linear-gradient(135deg, #EBF4FF 0%, #F0E6FF 100%);
-        --waitlist-headline:    #0F172A;
-        --waitlist-sub:         #374151;
-        --waitlist-point:       #1F2937;
-        --waitlist-counter-bg:  rgba(0,180,220,0.06);
-        --waitlist-counter-bdr: rgba(0,180,220,0.2);
-        --waitlist-counter-num: #0284C7;
-        --waitlist-counter-lbl: #374151;
-        --input-bg:             #FFFFFF;
-        --input-color:          #0F172A;
-        --input-border:         #CBD5E1;
-        --selectbox-bg:         #FFFFFF;
-        --selectbox-color:      #0F172A;
-        --selectbox-border:     #CBD5E1;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    st.markdown(NEUROTRADE_LIGHT_CSS, unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # COMBINED INTELLIGENCE SCORE
@@ -2020,7 +1530,7 @@ try:
         height=440,
         showlegend=False,
         hovermode="x unified",
-        font=dict(family="Inter", color="#94A3B8", size=10),
+        font=dict(family="DM Sans", color="#94A3B8", size=10),
     )
     for _ax in ("xaxis", "xaxis2"):
         _bt_fig.update_layout(**{_ax: dict(showgrid=False, showline=False,
