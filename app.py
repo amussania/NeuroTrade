@@ -934,6 +934,38 @@ def score_meta(score):
     return     "Strong Bull",  "#10B981", "linear-gradient(90deg,#064E3B,#10B981)"
 
 
+def compute_accuracy_tracker(btc_yearly, fng30):
+    if btc_yearly is None or btc_yearly.empty or not fng30:
+        return None
+    entries = fng30.get("data", [])[:30]
+    results = []
+    for entry in entries:
+        fng_val = int(entry["value"])
+        if fng_val <= 30 or fng_val >= 70:
+            signal_date = datetime.utcfromtimestamp(int(entry["timestamp"]))
+            signal_label = "Strong Bull" if fng_val >= 70 else "Strong Bear"
+            signal_color = "#10B981" if fng_val >= 70 else "#EF4444"
+            df = btc_yearly.copy()
+            df["diff"] = (df["ts"] - signal_date).abs()
+            closest = df.loc[df["diff"].idxmin()]
+            price_at_signal = closest["price"]
+            for days, label in [(3, "3d"), (7, "7d")]:
+                target_date = signal_date + pd.Timedelta(days=days)
+                if target_date <= btc_yearly["ts"].iloc[-1]:
+                    df["diff2"] = (df["ts"] - target_date).abs()
+                    future_price = df.loc[df["diff2"].idxmin(), "price"]
+                    pct = ((future_price / price_at_signal) - 1) * 100
+                    results.append({
+                        "date":     signal_date.strftime("%b %d"),
+                        "signal":   signal_label,
+                        "color":    signal_color,
+                        "fng":      fng_val,
+                        "price_at": price_at_signal,
+                        "period":   label,
+                        "return":   pct,
+                    })
+    return results if results else None
+
 # ── FETCH ALL DATA ────────────────────────────────────────────────────────────
 with st.spinner("Loading market data…"):
     prices      = fetch_prices()
@@ -2095,6 +2127,73 @@ except Exception:
         '</div>',
         unsafe_allow_html=True,
     )
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIGNAL ACCURACY TRACKER
+# ═══════════════════════════════════════════════════════════════════════════════
+st.markdown('<div class="section-header">Signal Accuracy Tracker</div>', unsafe_allow_html=True)
+
+accuracy_data = compute_accuracy_tracker(btc_yearly, fng30)
+
+if accuracy_data is None:
+    st.markdown('<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;"><div style="font-size:28px; margin-bottom:8px;">📊</div><div style="font-size:14px;">Insufficient history to compute accuracy — check back after 30 days of data</div></div>', unsafe_allow_html=True)
+else:
+    bull_returns_7d = [r["return"] for r in accuracy_data if r["signal"] == "Strong Bull" and r["period"] == "7d"]
+    bear_returns_7d = [r["return"] for r in accuracy_data if r["signal"] == "Strong Bear" and r["period"] == "7d"]
+    bull_winrate = round(sum(1 for x in bull_returns_7d if x > 0) / len(bull_returns_7d) * 100) if bull_returns_7d else None
+    bear_winrate = round(sum(1 for x in bear_returns_7d if x < 0) / len(bear_returns_7d) * 100) if bear_returns_7d else None
+    bull_avg = sum(bull_returns_7d) / len(bull_returns_7d) if bull_returns_7d else None
+    bear_avg = sum(bear_returns_7d) / len(bear_returns_7d) if bear_returns_7d else None
+
+    _acc_cols = st.columns(4, gap="large")
+    _acc_tiles = [
+        ("Strong Bull Signals",   str(len(bull_returns_7d)),                       "in last 30 days",    "#10B981"),
+        ("Bull Signal Win Rate",  f"{bull_winrate}%" if bull_winrate is not None else "—", "price up 7d later",  "#10B981"),
+        ("Strong Bear Signals",   str(len(bear_returns_7d)),                       "in last 30 days",    "#EF4444"),
+        ("Bear Signal Win Rate",  f"{bear_winrate}%" if bear_winrate is not None else "—", "price down 7d later","#EF4444"),
+    ]
+    for col, (lbl, val, sub, col_) in zip(_acc_cols, _acc_tiles):
+        with col:
+            st.markdown(
+                f'<div class="oc-tile"><div class="oc-label">{lbl}</div>'
+                f'<div class="oc-value" style="color:{col_}; font-size:28px;">{val}</div>'
+                f'<div style="color:#64748B; font-size:11px; margin-top:4px;">{sub}</div></div>',
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+
+    _hdr = st.columns([2, 2, 2, 2, 2], gap="small")
+    for col, label in zip(_hdr, ["Date", "Signal", "F&G Score", "BTC Price at Signal", "7-Day Return"]):
+        with col:
+            st.markdown(
+                f'<div style="color:#475569; font-size:11px; font-weight:700;'
+                f' letter-spacing:1.5px; text-transform:uppercase; padding:4px 0;">{label}</div>',
+                unsafe_allow_html=True,
+            )
+
+    seen = set()
+    for r in accuracy_data:
+        if r["period"] == "7d":
+            key = r["date"] + r["signal"]
+            if key in seen:
+                continue
+            seen.add(key)
+            ret_color = "#10B981" if r["return"] > 0 else "#EF4444"
+            ret_arrow = "▲" if r["return"] > 0 else "▼"
+            _row = st.columns([2, 2, 2, 2, 2], gap="small")
+            with _row[0]:
+                st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">{r["date"]}</div>', unsafe_allow_html=True)
+            with _row[1]:
+                st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{r["color"]}; font-size:12px; font-weight:700; letter-spacing:1px;">{r["signal"]}</div>', unsafe_allow_html=True)
+            with _row[2]:
+                st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">{r["fng"]}</div>', unsafe_allow_html=True)
+            with _row[3]:
+                st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">${r["price_at"]:,.0f}</div>', unsafe_allow_html=True)
+            with _row[4]:
+                st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{ret_color}; font-size:13px; font-weight:700;">{ret_arrow} {abs(r["return"]):.2f}%</div>', unsafe_allow_html=True)
+
+    st.markdown('<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">Based on Fear &amp; Greed extremes vs BTC price. Not financial advice.</div>', unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WHALE ACTIVITY
