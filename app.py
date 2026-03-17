@@ -553,7 +553,7 @@ def fetch_trending():
     except Exception:
         return None
 
-FRED_API_KEY = "FRED_API_KEY"
+FRED_API_KEY = "767a5cb44cbff6d2abcc0f5b96f77317"
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_fred_series(series_id: str, api_key: str):
