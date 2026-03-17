@@ -22,9 +22,465 @@ if 'theme' not in st.session_state:
 if 'selected_asset' not in st.session_state:
     st.session_state.selected_asset = 'bitcoin'
 
-from neurotrade_css import NEUROTRADE_CSS, NEUROTRADE_LIGHT_CSS
-st.markdown(NEUROTRADE_CSS, unsafe_allow_html=True)
+# ── CSS variables theming (single codebase, dark + light) ─────────────────────
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
+/* ── DESIGN TOKENS ── */
+:root {
+    --bg-base:              #0B1120;
+    --bg-card:              #1E293B;
+    --bg-deep:              #0B1120;
+    --border:               #334155;
+    --border-hover:         #475569;
+    --text-primary:         #FFFFFF;
+    --text-secondary:       #CBD5E1;
+    --text-muted:           #94A3B8;
+    --text-dim:             #64748B;
+    --text-very-dim:        #475569;
+    --scrollbar-track:      #0B1120;
+    --scrollbar-thumb:      #334155;
+    --section-hdr-color:    #94A3B8;
+    --section-hdr-border:   #1E293B;
+    --sub-grid-border:      #334155;
+    --waitlist-bg:          linear-gradient(135deg, #0F1E38 0%, #1A1035 100%);
+    --waitlist-headline:    #FFFFFF;
+    --waitlist-sub:         #94A3B8;
+    --waitlist-point:       #CBD5E1;
+    --waitlist-counter-bg:  rgba(0,212,255,0.06);
+    --waitlist-counter-bdr: rgba(0,212,255,0.15);
+    --waitlist-counter-num: #00D4FF;
+    --waitlist-counter-lbl: #64748B;
+    --input-bg:             #1E293B;
+    --input-color:          #CBD5E1;
+    --input-border:         #334155;
+    --selectbox-bg:         #1E293B;
+    --selectbox-color:      #CBD5E1;
+    --selectbox-border:     #334155;
+}
+
+
+/* ── BASE ── */
+.main > div { zoom: 0.90; }
+
+html, body, [class*="css"], .stApp {
+    font-family: 'Inter', sans-serif !important;
+    background-color: var(--bg-base) !important;
+    color: var(--text-secondary);
+}
+
+/* Hide Streamlit chrome */
+#MainMenu, footer, header { visibility: hidden; }
+[data-testid="stToolbar"]    { display: none; }
+[data-testid="stDecoration"] { display: none; }
+[data-testid="stHeader"]     { background: transparent; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+
+/* ── SECTION HEADERS ── */
+.section-header {
+    color: var(--section-hdr-color);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 40px 0 20px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--section-hdr-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.section-header::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 16px;
+    background: linear-gradient(180deg, #00d4ff, #7c3aed);
+    border-radius: 2px;
+}
+
+/* ── PRICE CARDS ── */
+.price-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    padding: 28px 28px 22px 28px;
+    margin-bottom: 0;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+.price-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent, #334155);
+    border-radius: 20px 20px 0 0;
+}
+.price-card:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.coin-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+}
+.coin-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.coin-price {
+    font-size: 64px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -1.5px;
+    line-height: 1.05;
+    margin: 6px 0 10px 0;
+}
+.change-pos {
+    color: #10b981;
+    font-size: 18px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(16,185,129,0.1);
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+.change-neg {
+    color: #ef4444;
+    font-size: 18px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(239,68,68,0.1);
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+.sub-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--sub-grid-border);
+}
+.sub-item-label {
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.sub-item-value {
+    color: var(--text-muted);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* ── ON-CHAIN TILES ── */
+.oc-tile {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 24px 20px 24px;
+    transition: border-color 0.2s ease;
+}
+.oc-tile:hover { border-color: var(--border-hover); }
+.oc-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+.oc-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+.oc-unit {
+    font-size: 14px;
+    color: var(--text-dim);
+    font-weight: 500;
+    margin-left: 4px;
+}
+
+/* ── F&G ── */
+.fng-label-big {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 800;
+    margin-top: -8px;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+}
+.fng-sub {
+    text-align: center;
+    color: var(--text-very-dim);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+.subsection-label {
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 24px 0 10px 0;
+}
+
+/* ── LIVE DOT ── */
+@keyframes pulse { 0%,100% { opacity:1; box-shadow:0 0 0 0 rgba(16,185,129,0.4); }
+                   50%      { opacity:0.7; box-shadow:0 0 0 6px rgba(16,185,129,0); } }
+.live-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 2.5s infinite;
+}
+
+/* ── CHART CONTAINER ── */
+.chart-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px;
+    overflow: hidden;
+}
+
+/* ── INTELLIGENCE SCORE ── */
+.intel-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 24px 32px 20px 32px;
+    margin: 8px 0 4px 0;
+    position: relative;
+    overflow: hidden;
+}
+.intel-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(0,212,255,0.03) 0%, rgba(124,58,237,0.03) 100%);
+    pointer-events: none;
+}
+.intel-score-number {
+    font-size: 80px;
+    font-weight: 800;
+    letter-spacing: -3px;
+    line-height: 1;
+    color: var(--text-primary);
+}
+.intel-label {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    color: var(--text-primary);
+}
+.intel-explanation {
+    color: var(--text-muted);
+    font-size: 15px;
+    font-weight: 400;
+    margin-top: 8px;
+    line-height: 1.5;
+}
+.intel-bar-track {
+    background: var(--bg-deep);
+    border-radius: 999px;
+    height: 16px;
+    margin: 20px 0 8px 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+.intel-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.6s ease;
+}
+.intel-component {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.intel-comp-label {
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+.intel-comp-bar-track {
+    background: var(--bg-deep);
+    border-radius: 999px;
+    height: 6px;
+    overflow: hidden;
+}
+.intel-comp-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    opacity: 0.7;
+}
+.intel-comp-value {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 1px;
+}
+
+/* ── WAITLIST ── */
+.waitlist-card {
+    background: var(--waitlist-bg);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 52px 56px;
+    position: relative;
+    overflow: hidden;
+}
+.waitlist-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00D4FF 0%, #7C3AED 50%, #F7931A 100%);
+    border-radius: 24px 24px 0 0;
+}
+.waitlist-headline {
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--waitlist-headline);
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 16px;
+}
+.waitlist-sub {
+    font-size: 16px;
+    color: var(--waitlist-sub);
+    line-height: 1.7;
+    margin-bottom: 32px;
+    max-width: 520px;
+}
+.waitlist-value-point {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+    font-size: 15px;
+    color: var(--waitlist-point);
+    font-weight: 500;
+}
+.waitlist-check {
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #00D4FF, #7C3AED);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 11px;
+    color: #FFFFFF;
+    font-weight: 700;
+}
+.waitlist-counter-box {
+    background: var(--waitlist-counter-bg);
+    border: 1px solid var(--waitlist-counter-bdr);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.waitlist-counter-num {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--waitlist-counter-num);
+    letter-spacing: -1px;
+    line-height: 1;
+}
+.waitlist-counter-label {
+    color: var(--waitlist-counter-lbl);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+.waitlist-urgency {
+    color: var(--text-dim);
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    margin-top: 12px;
+    letter-spacing: 0.2px;
+}
+
+/* ── SELECTBOX ── */
+[data-testid="stSelectbox"] > div > div,
+div[data-baseweb="select"] > div {
+    background-color: var(--selectbox-bg) !important;
+    color: var(--selectbox-color) !important;
+    border-color: var(--selectbox-border) !important;
+}
+div[data-baseweb="select"] * { color: var(--selectbox-color) !important; }
+div[data-baseweb="select"] svg { fill: var(--text-dim) !important; }
+div[data-baseweb="popover"],
+div[data-baseweb="menu"] { background-color: var(--selectbox-bg) !important; }
+div[data-baseweb="option"] {
+    background-color: var(--selectbox-bg) !important;
+    color: var(--selectbox-color) !important;
+}
+div[data-baseweb="option"]:hover { background-color: var(--bg-deep) !important; }
+li[role="option"] {
+    background-color: var(--selectbox-bg) !important;
+    color: var(--selectbox-color) !important;
+}
+li[role="option"]:hover { background-color: var(--bg-deep) !important; }
+
+/* ── EMAIL INPUT ── */
+[data-testid="stTextInput"] > div > div > input,
+[data-testid="stTextInput"] > div > div {
+    background-color: var(--input-bg) !important;
+    color: var(--input-color) !important;
+    border-color: var(--input-border) !important;
+}
+
+/* Streamlit form element overrides */
+div[data-testid="stForm"] {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ── Auto-refresh: 1 s tick drives the countdown timer; cached data re-fetches
 # ── only when TTLs expire (600 s), so the frequent reruns are lightweight.
@@ -325,7 +781,7 @@ def make_price_chart(df, meta):
                 f"{arrow} {abs(chg):.2f}%</span>"
                 f"  <span style='color:#475569;font-size:12px'>7 days</span>"
             ),
-            font=dict(size=15, family="DM Sans"),
+            font=dict(size=15, family="Inter"),
             x=0.02, xanchor="left",
         ),
         xaxis=dict(
@@ -334,7 +790,7 @@ def make_price_chart(df, meta):
             gridwidth=1,
             showline=False,
             zeroline=False,
-            tickfont=dict(size=11, color="#94A3B8", family="DM Sans"),
+            tickfont=dict(size=11, color="#94A3B8", family="Inter"),
             tickformat="%b %d",
         ),
         yaxis=dict(
@@ -343,7 +799,7 @@ def make_price_chart(df, meta):
             gridwidth=1,
             showline=False,
             zeroline=False,
-            tickfont=dict(size=11, color="#94A3B8", family="DM Sans"),
+            tickfont=dict(size=11, color="#94A3B8", family="Inter"),
             tickprefix="$",
             tickformat=",.0f" if is_large else ",.2f",
             side="right",
@@ -355,7 +811,7 @@ def make_fng_gauge(value, color):
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=value,
-        number=dict(font=dict(size=52, color=color, family="DM Sans"), suffix=""),
+        number=dict(font=dict(size=52, color=color, family="Inter"), suffix=""),
         gauge=dict(
             axis=dict(range=[0, 100], visible=False),
             bar=dict(color=color, thickness=0.3),
@@ -381,7 +837,7 @@ def make_fng_gauge(value, color):
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         height=210,
-        font=dict(family="DM Sans"),
+        font=dict(family="Inter"),
     )
     return fig
 
@@ -397,7 +853,7 @@ def make_fng_history(fng_data):
         marker_line_width=0,
         text=values,
         textposition="outside",
-        textfont=dict(size=12, color="#94A3B8", family="DM Sans"),
+        textfont=dict(size=12, color="#94A3B8", family="Inter"),
         hovertemplate="%{x}: <b>%{y}</b><extra></extra>",
     ))
     fig.update_layout(
@@ -407,7 +863,7 @@ def make_fng_history(fng_data):
         xaxis=dict(
             showgrid=False,
             showline=False,
-            tickfont=dict(color="#94A3B8", size=11, family="DM Sans"),
+            tickfont=dict(color="#94A3B8", size=11, family="Inter"),
         ),
         yaxis=dict(range=[0, 120], visible=False),
         height=160,
@@ -444,13 +900,13 @@ def make_fng_line_30(fng_data):
         showlegend=False,
         hovermode="x unified",
         xaxis=dict(showgrid=False, showline=False,
-                   tickfont=dict(color="#94A3B8", size=10, family="DM Sans"),
+                   tickfont=dict(color="#94A3B8", size=10, family="Inter"),
                    tickmode="array",
                    tickvals=dates[::5],
                    ticktext=dates[::5]),
         yaxis=dict(range=[0, 100], showgrid=True, gridcolor="rgba(128,128,128,0.15)",
                    gridwidth=1, zeroline=False,
-                   tickfont=dict(color="#94A3B8", size=10, family="DM Sans")),
+                   tickfont=dict(color="#94A3B8", size=10, family="Inter")),
     )
     return fig
 
@@ -577,34 +1033,6 @@ def compute_accuracy_tracker(btc_yearly, fng30):
                     })
     return results if results else None
 
-@st.cache_data(ttl=1800, show_spinner=False)
-def fetch_market_positioning():
-    try:
-        results = {}
-        coins = ['bitcoin', 'ethereum', 'solana']
-        for coin in coins:
-            url = (
-                f'https://api.coingecko.com/api/v3/coins/{coin}'
-                '?localization=false&tickers=false'
-                '&market_data=true&community_data=false'
-                '&developer_data=false'
-            )
-            r = requests.get(url, timeout=15, headers=HEADERS)
-            r.raise_for_status()
-            data = r.json()
-            md = data.get('market_data', {})
-            results[coin] = {
-                'price_change_7d': md.get('price_change_percentage_7d', 0) or 0,
-                'price_change_30d': md.get('price_change_percentage_30d', 0) or 0,
-                'ath_change': md.get('ath_change_percentage', {}).get('usd', 0) or 0,
-                'market_cap_rank': data.get('market_cap_rank', 0),
-                'sentiment_votes_up': data.get('sentiment_votes_up_percentage', 0) or 0,
-            }
-            time.sleep(1)
-        return results
-    except Exception:
-        return None
-
 # ── FETCH ALL DATA ────────────────────────────────────────────────────────────
 with st.spinner("Loading market data…"):
     prices      = fetch_prices()
@@ -615,8 +1043,7 @@ with st.spinner("Loading market data…"):
     trending    = fetch_trending()
     news        = fetch_crypto_news()
     btc_yearly  = fetch_btc_yearly()
-    whale_txs      = fetch_whale_transactions()
-    market_positioning = fetch_market_positioning()
+    whale_txs   = fetch_whale_transactions()
     macro_dff   = fetch_fred_series("DFF",      FRED_API_KEY)
     macro_dxy   = fetch_fred_series("DTWEXBGS", FRED_API_KEY)
     macro_t10   = fetch_fred_series("T10YIE",   FRED_API_KEY)
@@ -679,7 +1106,41 @@ with col_ts:
 
 # ── Override CSS variables for light mode ─────────────────────────────────────
 if st.session_state.theme == "light":
-    st.markdown(NEUROTRADE_LIGHT_CSS, unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+    :root {
+        --bg-base:              #F0F4F8;
+        --bg-card:              #FFFFFF;
+        --bg-deep:              #E2E8F0;
+        --border:               #CBD5E1;
+        --border-hover:         #94A3B8;
+        --text-primary:         #0F172A;
+        --text-secondary:       #374151;
+        --text-muted:           #374151;
+        --text-dim:             #64748B;
+        --text-very-dim:        #64748B;
+        --scrollbar-track:      #E2E8F0;
+        --scrollbar-thumb:      #94A3B8;
+        --section-hdr-color:    #1F2937;
+        --section-hdr-border:   #CBD5E1;
+        --sub-grid-border:      #CBD5E1;
+        --waitlist-bg:          linear-gradient(135deg, #EBF4FF 0%, #F0E6FF 100%);
+        --waitlist-headline:    #0F172A;
+        --waitlist-sub:         #374151;
+        --waitlist-point:       #1F2937;
+        --waitlist-counter-bg:  rgba(0,180,220,0.06);
+        --waitlist-counter-bdr: rgba(0,180,220,0.2);
+        --waitlist-counter-num: #0284C7;
+        --waitlist-counter-lbl: #374151;
+        --input-bg:             #FFFFFF;
+        --input-color:          #0F172A;
+        --input-border:         #CBD5E1;
+        --selectbox-bg:         #FFFFFF;
+        --selectbox-color:      #0F172A;
+        --selectbox-border:     #CBD5E1;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # COMBINED INTELLIGENCE SCORE
@@ -1407,80 +1868,6 @@ else:
     )
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MARKET POSITIONING & SENTIMENT
-# ═══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-header">Market Positioning & Sentiment</div>', unsafe_allow_html=True)
-
-if market_positioning:
-    _coins_display = [
-        ('bitcoin',  'BTC', '#F7931A'),
-        ('ethereum', 'ETH', '#627EEA'),
-        ('solana',   'SOL', '#9945FF'),
-    ]
-
-    _mp_cols = st.columns(3, gap="large")
-
-    for col, (coin_key, symbol, color) in zip(_mp_cols, _coins_display):
-        with col:
-            if coin_key in market_positioning:
-                d = market_positioning[coin_key]
-                chg_7d   = d['price_change_7d']
-                chg_30d  = d['price_change_30d']
-                ath_chg  = d['ath_change']
-                votes_up = d['sentiment_votes_up']
-
-                chg_7d_color  = "#10B981" if chg_7d >= 0 else "#EF4444"
-                chg_30d_color = "#10B981" if chg_30d >= 0 else "#EF4444"
-
-                if votes_up >= 70:
-                    sent_label = "BULLISH"
-                    sent_color = "#10B981"
-                elif votes_up >= 50:
-                    sent_label = "SLIGHT BULL"
-                    sent_color = "#84CC16"
-                elif votes_up >= 40:
-                    sent_label = "NEUTRAL"
-                    sent_color = "#94A3B8"
-                else:
-                    sent_label = "BEARISH"
-                    sent_color = "#EF4444"
-
-                st.markdown(
-                    f'<div class="oc-tile">'
-                    f'<div class="oc-label" style="color:{color}; font-size:13px;">'
-                    f'{symbol} · Market Positioning</div>'
-                    f'<div style="margin-top:14px; display:flex; '
-                    f'flex-direction:column; gap:10px;">'
-                    f'<div style="display:flex; justify-content:space-between;">'
-                    f'<span style="color:#64748B; font-size:12px;">7-Day Return</span>'
-                    f'<span style="color:{chg_7d_color}; font-weight:700; '
-                    f'font-size:13px;">{chg_7d:+.2f}%</span></div>'
-                    f'<div style="display:flex; justify-content:space-between;">'
-                    f'<span style="color:#64748B; font-size:12px;">30-Day Return</span>'
-                    f'<span style="color:{chg_30d_color}; font-weight:700; '
-                    f'font-size:13px;">{chg_30d:+.2f}%</span></div>'
-                    f'<div style="display:flex; justify-content:space-between;">'
-                    f'<span style="color:#64748B; font-size:12px;">From ATH</span>'
-                    f'<span style="color:#94A3B8; font-weight:600; '
-                    f'font-size:13px;">{ath_chg:+.1f}%</span></div>'
-                    f'<div style="display:flex; justify-content:space-between; '
-                    f'margin-top:4px; padding-top:10px; border-top:1px solid var(--border);">'
-                    f'<span style="color:#64748B; font-size:12px;">Community Sentiment</span>'
-                    f'<span style="color:{sent_color}; font-weight:700; '
-                    f'font-size:11px; letter-spacing:1px;">{sent_label}</span></div>'
-                    f'</div></div>',
-                    unsafe_allow_html=True,
-                )
-else:
-    st.markdown(
-        '<div class="oc-tile" style="text-align:center; padding:48px; color:#475569;">'
-        '<div style="font-size:28px; margin-bottom:8px;">📊</div>'
-        '<div style="font-size:14px;">Market positioning data loading</div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-
-# ═══════════════════════════════════════════════════════════════════════════════
 # MACRO INTELLIGENCE
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown('<div class="section-header">Macro Intelligence</div>', unsafe_allow_html=True)
@@ -1633,7 +2020,7 @@ try:
         height=440,
         showlegend=False,
         hovermode="x unified",
-        font=dict(family="DM Sans", color="#94A3B8", size=10),
+        font=dict(family="Inter", color="#94A3B8", size=10),
     )
     for _ax in ("xaxis", "xaxis2"):
         _bt_fig.update_layout(**{_ax: dict(showgrid=False, showline=False,
