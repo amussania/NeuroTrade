@@ -865,7 +865,7 @@ def compute_intelligence_score(prices, fng, onchain, charts, coin_id="bitcoin"):
     if prices and coin_id in prices:
         change_24h = prices[coin_id].get("usd_24h_change")
         if change_24h is not None:
-            components["momentum"] = max(0.0, min(100.0, (change_24h + 15) / 30 * 100))
+            components["momentum"] = max(0.0, min(100.0, (change_24h + 20) / 40 * 100))
 
     # 3. 7-day trend (25%) — map ±25 % to 0–100
     change_7d = None
@@ -879,7 +879,7 @@ def compute_intelligence_score(prices, fng, onchain, charts, coin_id="bitcoin"):
     if coin_id == "bitcoin" and onchain:
         n_tx = onchain.get("n_tx", 0)
         if n_tx:
-            components["onchain"] = max(0.0, min(100.0, (n_tx - 150_000) / 350_000 * 100))
+            components["onchain"] = max(0.0, min(100.0, (n_tx - 200_000) / 400_000 * 100))
 
     if not components:
         return None, {}, "Insufficient data available to compute score."
@@ -1871,8 +1871,14 @@ if _fng30_entries:
     _avg_color = fng_color(int(_avg))
 
     # Tile 3 — Sentiment Trend
-    _trend_label = "Improving" if _today > _avg else "Deteriorating"
-    _trend_color = "#10B981" if _today > _avg else "#EF4444"
+    if _today > _avg:
+        _zone = fng_text(_today)
+        _trend_label = f"Improving · {_zone}"
+        _trend_color = "#10B981"
+    else:
+        _zone = fng_text(_today)
+        _trend_label = f"Deteriorating · {_zone}"
+        _trend_color = "#EF4444"
 
     # Tile 4 — Consecutive Days in Zone
     _zone_color = fng_color(_today)
@@ -2007,7 +2013,7 @@ elif _dff is None and _dxy is None:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SIGNAL BACKTESTING
 # ═══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-header">Signal Backtesting</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">Price vs Sentiment History</div>', unsafe_allow_html=True)
 
 try:
     _bt_fng_entries = (fng30 or {}).get("data", [])[:30] if fng30 else []
@@ -2236,6 +2242,14 @@ else:
                 unsafe_allow_html=True,
             )
 
+    st.markdown(
+        '<div style="background:rgba(234,179,8,0.06); border:1px solid rgba(234,179,8,0.15);'
+        ' border-radius:12px; padding:10px 16px; margin-bottom:8px;">'
+        '<span style="color:#EAB308; font-size:12px; font-weight:600;">⚠ Unconfirmed transactions only.'
+        ' These are pending mempool movements not yet confirmed on-chain.</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
     st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
 
     # ── Transaction table ────────────────────────────────────────────────────
