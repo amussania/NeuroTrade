@@ -547,7 +547,7 @@ def fng_text(v):
 # ── Data fetching ─────────────────────────────────────────────────────────────
 HEADERS = {"Accept": "application/json", "User-Agent": "NeuroTrade/1.0 (contact@neurotrade.ai)"}
 
-@st.cache_data(ttl=600, show_spinner=False)
+@st.cache_data(ttl=900, show_spinner=False)
 def fetch_prices():
     ids = ",".join(COINS.keys())
     url = (
@@ -555,12 +555,18 @@ def fetch_prices():
         f"?ids={ids}&vs_currencies=usd"
         "&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true"
     )
-    try:
-        r = requests.get(url, timeout=15, headers=HEADERS)
-        r.raise_for_status()
-        return r.json()
-    except Exception:
-        return None
+    for attempt in range(3):
+        try:
+            time.sleep(attempt * 2)
+            r = requests.get(url, timeout=15, headers=HEADERS)
+            if r.status_code == 429:
+                time.sleep(10)
+                continue
+            r.raise_for_status()
+            return r.json()
+        except Exception:
+            time.sleep(5)
+    return None
 
 @st.cache_data(ttl=600, show_spinner=False)
 def fetch_fear_greed():
@@ -606,7 +612,7 @@ def fetch_eth_onchain():
     except Exception:
         return None
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=7200, show_spinner=False)
 def fetch_trending():
     try:
         r = requests.get(
@@ -697,7 +703,7 @@ def fetch_crypto_news(query="crypto OR bitcoin OR ethereum"):
     except Exception:
         return None
 
-@st.cache_data(ttl=600, show_spinner=False)
+@st.cache_data(ttl=900, show_spinner=False)
 def fetch_chart(coin_id: str):
     # Free CoinGecko tier: days=7 auto-returns hourly data; no interval param needed
     # 1-second delay per call to respect the free-tier rate limit (30 req/min).
@@ -1357,7 +1363,8 @@ else:
         f'<span class="coin-dot" style="background:{asset_color};"></span>'
         f'{_pc_meta["symbol"]} · {_pc_meta["name"]}'
         f'</div>'
-        f'<div class="coin-price" style="color:#334155;">Data unavailable</div>'
+        f'<div class="coin-price" style="color:#334155; font-size:24px;">Rate limited</div>'
+        f'<div style="color:#475569; font-size:13px; margin-top:8px;">CoinGecko free tier limit reached. Auto-retrying in 5 min.</div>'
         f'</div>',
         unsafe_allow_html=True,
     )
