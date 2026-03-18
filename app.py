@@ -496,13 +496,10 @@ def get_supabase():
         url = st.secrets.get('SUPABASE_URL', '')
         key = st.secrets.get('SUPABASE_KEY', '')
         if not url or not key:
-            st.warning(f'Supabase: Missing secrets. URL present: {bool(url)} KEY present: {bool(key)}')
             return None
         client = create_client(url, key)
-        st.success(f'Supabase connected: {url[:40]}')
         return client
-    except Exception as e:
-        st.error(f'Supabase error: {str(e)[:100]}')
+    except Exception:
         return None
 
 def log_signal_snapshot(prices, fng, onchain, charts, trending, coin_id, score, score_label):
@@ -535,8 +532,8 @@ def log_signal_snapshot(prices, fng, onchain, charts, trending, coin_id, score, 
             'market_cap': p.get('usd_market_cap'),
             'n_tx': n_tx,
         }).execute()
-    except Exception as e:
-        st.error(f'Supabase insert error: {str(e)[:150]}')
+    except Exception:
+        pass
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 COINS = {
@@ -1245,18 +1242,10 @@ WEIGHTS_DISPLAY = {
 
 if score is not None:
     label, s_color, bar_grad = score_meta(score)
-    try:
-        sb_test = get_supabase()
-        if sb_test:
-            st.sidebar.success('Supabase connected')
-            log_signal_snapshot(
-                prices, fng, onchain, charts, trending,
-                selected_coin, score, label
-            )
-        else:
-            st.sidebar.error('Supabase not connected - check secrets')
-    except Exception as e:
-        st.sidebar.error(f'Supabase error: {e}')
+    log_signal_snapshot(
+        prices, fng, onchain, charts, trending,
+        selected_coin, score, label
+    )
 
     left_score, right_breakdown = st.columns([2, 3], gap="large")
 
