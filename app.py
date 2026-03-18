@@ -535,8 +535,8 @@ def log_signal_snapshot(prices, fng, onchain, charts, trending, coin_id, score, 
             'market_cap': p.get('usd_market_cap'),
             'n_tx': n_tx,
         }).execute()
-    except Exception:
-        pass
+    except Exception as e:
+        st.error(f'Supabase insert error: {str(e)[:150]}')
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 COINS = {
