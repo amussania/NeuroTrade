@@ -1238,10 +1238,18 @@ WEIGHTS_DISPLAY = {
 
 if score is not None:
     label, s_color, bar_grad = score_meta(score)
-    log_signal_snapshot(
-        prices, fng, onchain, charts, trending,
-        selected_coin, score, label
-    )
+    try:
+        sb_test = get_supabase()
+        if sb_test:
+            st.sidebar.success('Supabase connected')
+            log_signal_snapshot(
+                prices, fng, onchain, charts, trending,
+                selected_coin, score, label
+            )
+        else:
+            st.sidebar.error('Supabase not connected - check secrets')
+    except Exception as e:
+        st.sidebar.error(f'Supabase error: {e}')
 
     left_score, right_breakdown = st.columns([2, 3], gap="large")
 
