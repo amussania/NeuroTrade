@@ -496,13 +496,13 @@ def get_supabase():
         url = st.secrets.get('SUPABASE_URL', '')
         key = st.secrets.get('SUPABASE_KEY', '')
         if not url or not key:
-            st.sidebar.error(f'Missing secrets. URL: {bool(url)} KEY: {bool(key)}')
+            st.warning(f'Supabase: Missing secrets. URL present: {bool(url)} KEY present: {bool(key)}')
             return None
         client = create_client(url, key)
-        st.sidebar.success(f'Connected. URL starts: {url[:30]}')
+        st.success(f'Supabase connected: {url[:40]}')
         return client
     except Exception as e:
-        st.sidebar.error(f'Connection error: {str(e)[:100]}')
+        st.error(f'Supabase error: {str(e)[:100]}')
         return None
 
 def log_signal_snapshot(prices, fng, onchain, charts, trending, coin_id, score, score_label):
