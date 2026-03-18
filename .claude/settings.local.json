@@ -6,7 +6,8 @@
       "Read(//c/Users/amuss/AppData/Local/Programs/**)",
       "Bash(ls /c/Python*)",
       "Read(//c/Users/amuss/**)",
-      "Bash(/c/Users/amuss/AppData/Local/Python/bin/pip.exe install:*)"
+      "Bash(/c/Users/amuss/AppData/Local/Python/bin/pip.exe install:*)",
+      "Bash(python:*)"
     ]
   }
 }

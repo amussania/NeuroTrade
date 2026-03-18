@@ -7,6 +7,7 @@ from datetime import datetime
 import csv
 import os
 import time
+from supabase import create_client
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -489,6 +490,46 @@ try:
     st_autorefresh(interval=1000, key="neurotrade_tick")
 except ImportError:
     pass
+
+def get_supabase():
+    url = st.secrets.get('SUPABASE_URL', '')
+    key = st.secrets.get('SUPABASE_KEY', '')
+    if url and key:
+        return create_client(url, key)
+    return None
+
+def log_signal_snapshot(prices, fng, onchain, charts, trending, coin_id, score, score_label):
+    try:
+        sb = get_supabase()
+        if not sb:
+            return
+        p = (prices or {}).get(coin_id, {})
+        df = (charts or {}).get(coin_id)
+        change_7d = None
+        if df is not None and not df.empty:
+            change_7d = ((df['price'].iloc[-1] / df['price'].iloc[0]) - 1) * 100
+        fng_val = None
+        fng_lbl = None
+        if fng and 'data' in fng and fng['data']:
+            fng_val = int(fng['data'][0]['value'])
+            fng_lbl = fng['data'][0].get('value_classification')
+        n_tx = (onchain or {}).get('n_tx') if coin_id == 'bitcoin' else None
+        sb.table('signal_snapshots').insert({
+            'asset': coin_id,
+            'fng_value': fng_val,
+            'fng_label': fng_lbl,
+            'price_usd': p.get('usd'),
+            'change_24h': p.get('usd_24h_change'),
+            'change_7d': change_7d,
+            'intelligence_score': score,
+            'score_label': score_label,
+            'is_trending': (coin_id in (trending or [])),
+            'volume_24h': p.get('usd_24h_vol'),
+            'market_cap': p.get('usd_market_cap'),
+            'n_tx': n_tx,
+        }).execute()
+    except Exception:
+        pass
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 COINS = {
@@ -1197,6 +1238,10 @@ WEIGHTS_DISPLAY = {
 
 if score is not None:
     label, s_color, bar_grad = score_meta(score)
+    log_signal_snapshot(
+        prices, fng, onchain, charts, trending,
+        selected_coin, score, label
+    )
 
     left_score, right_breakdown = st.columns([2, 3], gap="large")
 
