@@ -1476,7 +1476,7 @@ with right:
 
         if onchain:
             hash_rate_raw = onchain.get("hash_rate", 0)
-            hash_rate  = hash_rate_raw / 1e9
+            hash_rate  = hash_rate_raw / 1e12
             difficulty = onchain.get("difficulty", 0) / 1e12
             n_tx       = onchain.get("n_tx", 0)
             blk_time   = onchain.get("minutes_between_blocks", 0)
@@ -1805,9 +1805,10 @@ _fng30_entries = (fng30 or {}).get("data", [])[:30] if fng30 else []
 
 if _fng30_entries:
     _vals    = [int(e["value"]) for e in _fng30_entries]
+    _vals    = _vals[:30]
     _today   = _vals[0]
     _avg     = sum(_vals) / len(_vals)
-    _extreme_fear_days = sum(1 for v in _vals if v <= 25)
+    _extreme_fear_days = min(30, sum(1 for v in _vals if v <= 25))
     _today_zone = fng_text(_today)
 
     # Consecutive days in current zone
