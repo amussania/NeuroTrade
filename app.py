@@ -1050,9 +1050,6 @@ with st.spinner("Loading market data…"):
     macro_unem  = fetch_fred_series("UNRATE",   FRED_API_KEY)
     charts      = {st.session_state.selected_asset: fetch_chart(st.session_state.selected_asset)}
 
-if onchain:
-    st.sidebar.write("Raw hash_rate value:", onchain.get("hash_rate", 0))
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # HEADER
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1479,7 +1476,7 @@ with right:
 
         if onchain:
             hash_rate_raw = onchain.get("hash_rate", 0)
-            hash_rate  = hash_rate_raw / 1e12
+            hash_rate  = hash_rate_raw / 1e9
             difficulty = onchain.get("difficulty", 0) / 1e12
             n_tx       = onchain.get("n_tx", 0)
             blk_time   = onchain.get("minutes_between_blocks", 0)
@@ -1488,7 +1485,7 @@ with right:
             market_px  = onchain.get("market_price_usd", 0)
 
             tiles = [
-                ("Hash Rate",          f"{hash_rate:.1f}",   "EH/s"),
+                ("Hash Rate",          f"{hash_rate:.0f}",   "EH/s"),
                 ("Mining Difficulty",  f"{difficulty:.2f}T", ""),
                 ("Transactions Today", f"{n_tx:,}",          ""),
                 ("Avg Block Time",     f"{blk_time:.1f}",    "min"),
