@@ -1312,19 +1312,19 @@ else:
 # ═══════════════════════════════════════════════════════════════════════════════
 # MARKET PRICES
 # ═══════════════════════════════════════════════════════════════════════════════
-st.markdown(
-    f'<div class="section-header">Market Prices &nbsp;·&nbsp; '
-    f'<span style="color:{asset_color};">{selected_meta["name"]}</span></div>',
-    unsafe_allow_html=True,
-)
-
-# Single full-width card for the selected asset
-_pc_meta = selected_meta
-_pc_glow = (
-    f"box-shadow:0 0 0 2px {asset_color}, 0 0 32px {asset_color}55, 0 8px 48px rgba(0,0,0,0.5);"
-    f"border-color:{asset_color};"
-)
 if prices and selected_coin in prices:
+    st.markdown(
+        f'<div class="section-header">Market Prices &nbsp;·&nbsp; '
+        f'<span style="color:{asset_color};">{selected_meta["name"]}</span></div>',
+        unsafe_allow_html=True,
+    )
+
+    # Single full-width card for the selected asset
+    _pc_meta = selected_meta
+    _pc_glow = (
+        f"box-shadow:0 0 0 2px {asset_color}, 0 0 32px {asset_color}55, 0 8px 48px rgba(0,0,0,0.5);"
+        f"border-color:{asset_color};"
+    )
     _p     = prices[selected_coin]
     _price = _p.get("usd")
     _chg   = _p.get("usd_24h_change")
@@ -1356,43 +1356,41 @@ if prices and selected_coin in prices:
     if _spark:
         st.plotly_chart(_spark, use_container_width=True,
                         config={"displayModeBar": False})
-else:
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # 7-DAY PRICE HISTORY CHARTS
+    # ═══════════════════════════════════════════════════════════════════════════════
     st.markdown(
-        f'<div class="price-card" style="--accent:#334155;">'
-        f'<div class="coin-label" style="color:#475569;">'
-        f'<span class="coin-dot" style="background:{asset_color};"></span>'
-        f'{_pc_meta["symbol"]} · {_pc_meta["name"]}'
-        f'</div>'
-        f'<div class="coin-price" style="color:#334155; font-size:24px;">Rate limited</div>'
-        f'<div style="color:#475569; font-size:13px; margin-top:8px;">CoinGecko free tier limit reached. Auto-retrying in 5 min.</div>'
-        f'</div>',
+        f'<div class="section-header">7-Day Price History &nbsp;·&nbsp; '
+        f'<span style="color:{asset_color};">{selected_meta["name"]}</span></div>',
         unsafe_allow_html=True,
     )
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 7-DAY PRICE HISTORY CHARTS
-# ═══════════════════════════════════════════════════════════════════════════════
-st.markdown(
-    f'<div class="section-header">7-Day Price History &nbsp;·&nbsp; '
-    f'<span style="color:{asset_color};">{selected_meta["name"]}</span></div>',
-    unsafe_allow_html=True,
-)
-
-# Single full-width chart for the selected asset only
-_chart_df  = charts.get(selected_coin)
-_chart_fig = make_price_chart(_chart_df, selected_meta)
-if _chart_fig:
-    st.plotly_chart(_chart_fig, use_container_width=True,
-                    config={"displayModeBar": False})
+    # Single full-width chart for the selected asset only
+    _chart_df  = charts.get(selected_coin)
+    _chart_fig = make_price_chart(_chart_df, selected_meta)
+    if _chart_fig:
+        st.plotly_chart(_chart_fig, use_container_width=True,
+                        config={"displayModeBar": False})
+    else:
+        st.markdown(
+            f'<div class="oc-tile" style="height:280px; display:flex; flex-direction:column;'
+            f' align-items:center; justify-content:center; gap:10px;">'
+            f'<div style="font-size:32px;">📡</div>'
+            f'<div style="color:#475569; font-size:14px; font-weight:600;">'
+            f'{selected_meta["name"]} chart loading…</div>'
+            f'<div style="color:#334155; font-size:12px;">CoinGecko rate limit — refreshes in 5 min</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 else:
     st.markdown(
-        f'<div class="oc-tile" style="height:280px; display:flex; flex-direction:column;'
-        f' align-items:center; justify-content:center; gap:10px;">'
-        f'<div style="font-size:32px;">📡</div>'
-        f'<div style="color:#475569; font-size:14px; font-weight:600;">'
-        f'{selected_meta["name"]} chart loading…</div>'
-        f'<div style="color:#334155; font-size:12px;">CoinGecko rate limit — refreshes in 5 min</div>'
-        f'</div>',
+        '<div class="oc-tile" style="text-align:center; '
+        'padding:20px 24px; margin-bottom:8px;">'
+        '<div style="color:#475569; font-size:13px;">'
+        '<span class="live-dot"></span>'
+        'Price data refreshing — auto-retrying in 5 minutes</div>'
+        '</div>',
         unsafe_allow_html=True,
     )
 
@@ -1880,67 +1878,77 @@ else:
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown('<div class="section-header">Market Positioning</div>', unsafe_allow_html=True)
 
-_mp_cols = st.columns(3, gap="large")
-_mp_display = [
-    ('bitcoin',  'BTC', '#F7931A'),
-    ('ethereum', 'ETH', '#627EEA'),
-    ('solana',   'SOL', '#9945FF'),
-]
+if prices:
+    _mp_cols = st.columns(3, gap="large")
+    _mp_display = [
+        ('bitcoin',  'BTC', '#F7931A'),
+        ('ethereum', 'ETH', '#627EEA'),
+        ('solana',   'SOL', '#9945FF'),
+    ]
 
-for col, (_mp_coin, _mp_sym, _mp_col) in zip(_mp_cols, _mp_display):
-    with col:
-        _mp_price_data = prices.get(_mp_coin, {}) if prices else {}
-        _mp_chg_24h = _mp_price_data.get('usd_24h_change', 0) or 0
-        _mp_df = charts.get(_mp_coin)
+    for col, (_mp_coin, _mp_sym, _mp_col) in zip(_mp_cols, _mp_display):
+        with col:
+            _mp_price_data = prices.get(_mp_coin, {}) if prices else {}
+            _mp_chg_24h = _mp_price_data.get('usd_24h_change', 0) or 0
+            _mp_df = charts.get(_mp_coin)
 
-        if _mp_df is not None and not _mp_df.empty:
-            _mp_chg_7d = ((_mp_df['price'].iloc[-1] / _mp_df['price'].iloc[0]) - 1) * 100
-        else:
-            _mp_chg_7d = None
+            if _mp_df is not None and not _mp_df.empty:
+                _mp_chg_7d = ((_mp_df['price'].iloc[-1] / _mp_df['price'].iloc[0]) - 1) * 100
+            else:
+                _mp_chg_7d = None
 
-        _mp_24h_color = "#10B981" if _mp_chg_24h >= 0 else "#EF4444"
-        _mp_7d_color  = "#10B981" if (_mp_chg_7d or 0) >= 0 else "#EF4444"
+            _mp_24h_color = "#10B981" if _mp_chg_24h >= 0 else "#EF4444"
+            _mp_7d_color  = "#10B981" if (_mp_chg_7d or 0) >= 0 else "#EF4444"
 
-        if (_mp_chg_7d or 0) > 10:
-            _mp_signal, _mp_sig_col = "STRONG BULL", "#10B981"
-        elif (_mp_chg_7d or 0) > 2:
-            _mp_signal, _mp_sig_col = "WEAK BULL",   "#84CC16"
-        elif (_mp_chg_7d or 0) > -2:
-            _mp_signal, _mp_sig_col = "NEUTRAL",     "#94A3B8"
-        elif (_mp_chg_7d or 0) > -10:
-            _mp_signal, _mp_sig_col = "WEAK BEAR",   "#F97316"
-        else:
-            _mp_signal, _mp_sig_col = "STRONG BEAR", "#EF4444"
+            if (_mp_chg_7d or 0) > 10:
+                _mp_signal, _mp_sig_col = "STRONG BULL", "#10B981"
+            elif (_mp_chg_7d or 0) > 2:
+                _mp_signal, _mp_sig_col = "WEAK BULL",   "#84CC16"
+            elif (_mp_chg_7d or 0) > -2:
+                _mp_signal, _mp_sig_col = "NEUTRAL",     "#94A3B8"
+            elif (_mp_chg_7d or 0) > -10:
+                _mp_signal, _mp_sig_col = "WEAK BEAR",   "#F97316"
+            else:
+                _mp_signal, _mp_sig_col = "STRONG BEAR", "#EF4444"
 
-        _fng_val = int(fng["data"][0]["value"]) if fng and "data" in fng else 50
-        _fng_sent = fng_text(_fng_val)
-        _fng_col  = fng_color(_fng_val)
+            _fng_val = int(fng["data"][0]["value"]) if fng and "data" in fng else 50
+            _fng_sent = fng_text(_fng_val)
+            _fng_col  = fng_color(_fng_val)
 
-        st.markdown(
-            f'<div class="oc-tile">'
-            f'<div class="oc-label" style="color:{_mp_col}; font-size:13px; margin-bottom:14px;">'
-            f'{_mp_sym} · Positioning</div>'
-            f'<div style="display:flex; flex-direction:column; gap:10px;">'
-            f'<div style="display:flex; justify-content:space-between;">'
-            f'<span style="color:var(--text-faint); font-size:12px;">24h Return</span>'
-            f'<span style="color:{_mp_24h_color}; font-weight:700; font-size:13px;">'
-            f'{_mp_chg_24h:+.2f}%</span></div>'
-            f'<div style="display:flex; justify-content:space-between;">'
-            f'<span style="color:var(--text-faint); font-size:12px;">7-Day Return</span>'
-            f'<span style="color:{_mp_7d_color}; font-weight:700; font-size:13px;">'
-            f'{f"{_mp_chg_7d:+.2f}%" if _mp_chg_7d is not None else "—"}</span></div>'
-            f'<div style="display:flex; justify-content:space-between; padding-top:10px;'
-            f' border-top:1px solid var(--border);">'
-            f'<span style="color:var(--text-faint); font-size:12px;">7-Day Signal</span>'
-            f'<span style="color:{_mp_sig_col}; font-weight:700; font-size:11px;'
-            f' letter-spacing:1px;">{_mp_signal}</span></div>'
-            f'<div style="display:flex; justify-content:space-between;">'
-            f'<span style="color:var(--text-faint); font-size:12px;">Market Sentiment</span>'
-            f'<span style="color:{_fng_col}; font-weight:700; font-size:11px;'
-            f' letter-spacing:1px;">{_fng_sent}</span></div>'
-            f'</div></div>',
-            unsafe_allow_html=True,
-        )
+            st.markdown(
+                f'<div class="oc-tile">'
+                f'<div class="oc-label" style="color:{_mp_col}; font-size:13px; margin-bottom:14px;">'
+                f'{_mp_sym} · Positioning</div>'
+                f'<div style="display:flex; flex-direction:column; gap:10px;">'
+                f'<div style="display:flex; justify-content:space-between;">'
+                f'<span style="color:var(--text-faint); font-size:12px;">24h Return</span>'
+                f'<span style="color:{_mp_24h_color}; font-weight:700; font-size:13px;">'
+                f'{_mp_chg_24h:+.2f}%</span></div>'
+                f'<div style="display:flex; justify-content:space-between;">'
+                f'<span style="color:var(--text-faint); font-size:12px;">7-Day Return</span>'
+                f'<span style="color:{_mp_7d_color}; font-weight:700; font-size:13px;">'
+                f'{f"{_mp_chg_7d:+.2f}%" if _mp_chg_7d is not None else "—"}</span></div>'
+                f'<div style="display:flex; justify-content:space-between; padding-top:10px;'
+                f' border-top:1px solid var(--border);">'
+                f'<span style="color:var(--text-faint); font-size:12px;">7-Day Signal</span>'
+                f'<span style="color:{_mp_sig_col}; font-weight:700; font-size:11px;'
+                f' letter-spacing:1px;">{_mp_signal}</span></div>'
+                f'<div style="display:flex; justify-content:space-between;">'
+                f'<span style="color:var(--text-faint); font-size:12px;">Market Sentiment</span>'
+                f'<span style="color:{_fng_col}; font-weight:700; font-size:11px;'
+                f' letter-spacing:1px;">{_fng_sent}</span></div>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
+else:
+    st.markdown(
+        '<div class="oc-tile" style="text-align:center; '
+        'padding:20px 24px;">'
+        '<div style="color:#475569; font-size:13px;">'
+        'Positioning data refreshing</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
 st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
@@ -2238,7 +2246,7 @@ if whale_txs is None:
     st.markdown(
         '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
         '<div style="font-size:28px; margin-bottom:8px;">🐋</div>'
-        '<div style="font-size:14px;">Whale data unavailable — retrying next refresh</div>'
+        '<div style="font-size:13px; color:#475569;">Whale data refreshing — auto-retrying in 5 minutes</div>'
         '</div>',
         unsafe_allow_html=True,
     )
