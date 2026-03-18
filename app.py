@@ -1485,7 +1485,7 @@ with right:
             market_px  = onchain.get("market_price_usd", 0)
 
             tiles = [
-                ("Hash Rate",          f"{hash_rate:.0f}",   "EH/s"),
+                ("Hash Rate",          f"{hash_rate:.1f}",   "EH/s"),
                 ("Mining Difficulty",  f"{difficulty:.2f}T", ""),
                 ("Transactions Today", f"{n_tx:,}",          ""),
                 ("Avg Block Time",     f"{blk_time:.1f}",    "min"),
