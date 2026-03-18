@@ -1050,6 +1050,9 @@ with st.spinner("Loading market data…"):
     macro_unem  = fetch_fred_series("UNRATE",   FRED_API_KEY)
     charts      = {st.session_state.selected_asset: fetch_chart(st.session_state.selected_asset)}
 
+if onchain:
+    st.sidebar.write("Raw hash_rate value:", onchain.get("hash_rate", 0))
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # HEADER
 # ═══════════════════════════════════════════════════════════════════════════════
