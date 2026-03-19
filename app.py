@@ -2006,21 +2006,17 @@ with right:
                     unsafe_allow_html=True)
 
         if onchain:
-            difficulty_raw = onchain.get("difficulty", 0)
-            hash_rate = 0
-            if difficulty_raw:
-                raw_hr = (difficulty_raw * (2**32)) / 600 / 1e18
-                if 400 <= raw_hr <= 1200:
-                    hash_rate = raw_hr
-                elif raw_hr > 1200:
-                    for divisor in [10, 100, 1000, 10000]:
-                        adjusted = raw_hr / divisor
-                        if 400 <= adjusted <= 1200:
-                            hash_rate = adjusted
-                            break
-                if hash_rate == 0:
-                    hash_rate = onchain.get("hash_rate", 0) / 1e9
-            difficulty = difficulty_raw / 1e12
+            hash_rate_raw = onchain.get("hash_rate", 0)
+            difficulty    = onchain.get("difficulty", 0)
+            if difficulty:
+                computed = (difficulty * (2**32)) / 600 / 1e18
+                scale = 1
+                while computed / scale > 1200:
+                    scale *= 10
+                hash_rate = computed / scale
+            else:
+                hash_rate = hash_rate_raw / 1e9
+            difficulty = difficulty / 1e12
             n_tx       = onchain.get("n_tx", 0)
             blk_time   = onchain.get("minutes_between_blocks", 0)
             total_btc  = onchain.get("totalbc", 0) / 1e8
@@ -2982,9 +2978,12 @@ if signal_history is not None and not signal_history.empty:
         config={"displayModeBar": False}
     )
 
-    _sh_first_price = signal_history["price"].iloc[0]
-    _sh_last_price = signal_history["price"].iloc[-1]
-    if _sh_first_price and _sh_first_price > 0:
+    _sh_valid_prices = signal_history[
+        signal_history["price"] > 0
+    ]["price"]
+    if len(_sh_valid_prices) >= 2:
+        _sh_first_price = _sh_valid_prices.iloc[0]
+        _sh_last_price  = _sh_valid_prices.iloc[-1]
         _sh_price_change = (
             (_sh_last_price / _sh_first_price) - 1
         ) * 100
