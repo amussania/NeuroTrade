@@ -692,23 +692,29 @@ def fetch_fred_series(series_id: str, api_key: str):
     except Exception:
         return None
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=7200, show_spinner=False)
 def fetch_btc_yearly():
-    try:
-        url = (
-            "https://api.coingecko.com/api/v3/coins/bitcoin"
-            "/market_chart?vs_currency=usd&days=365"
-        )
-        r = requests.get(url, timeout=20, headers=HEADERS)
-        r.raise_for_status()
-        data = r.json()
-        if "prices" not in data:
-            return None
-        df = pd.DataFrame(data["prices"], columns=["ts", "price"])
-        df["ts"] = pd.to_datetime(df["ts"], unit="ms")
-        return df
-    except Exception:
-        return None
+    for days in [365, 180, 90]:
+        try:
+            time.sleep(1)
+            url = (
+                "https://api.coingecko.com/api/v3/coins/bitcoin"
+                f"/market_chart?vs_currency=usd&days={days}"
+            )
+            r = requests.get(url, timeout=20, headers=HEADERS)
+            if r.status_code == 429:
+                time.sleep(10)
+                continue
+            r.raise_for_status()
+            data = r.json()
+            if "prices" not in data or not data["prices"]:
+                continue
+            df = pd.DataFrame(data["prices"], columns=["ts", "price"])
+            df["ts"] = pd.to_datetime(df["ts"], unit="ms")
+            return df
+        except Exception:
+            time.sleep(5)
+    return None
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def fetch_ohlc(coin_id: str, days: int = 7):
@@ -1833,11 +1839,10 @@ with right:
 
         if onchain:
             difficulty_raw = onchain.get("difficulty", 0)
-            blk_time_sec = onchain.get("minutes_between_blocks", 10) * 60
-            if difficulty_raw and blk_time_sec:
-                hash_rate = (difficulty_raw * (2**32)) / blk_time_sec / 1e18
+            if difficulty_raw:
+                hash_rate = (difficulty_raw * (2**32)) / 600 / 1e18
             else:
-                hash_rate = 0
+                hash_rate = onchain.get("hash_rate", 0) / 1e9
             difficulty = difficulty_raw / 1e12
             n_tx       = onchain.get("n_tx", 0)
             blk_time   = onchain.get("minutes_between_blocks", 0)
@@ -2522,12 +2527,18 @@ try:
                 unsafe_allow_html=True,
             )
 
-except Exception:
+except Exception as e:
+    if btc_yearly is None:
+        _fallback_msg = "BTC price history loading — auto-retrying"
+    elif not _bt_fng_entries:
+        _fallback_msg = "Fear & Greed history loading — auto-retrying"
+    else:
+        _fallback_msg = "Chart rendering — refresh in 30 seconds"
     st.markdown(
-        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
-        '<div style="font-size:28px; margin-bottom:8px;">📈</div>'
-        '<div style="font-size:14px;">Data loading — refresh in 5 minutes</div>'
-        '</div>',
+        f'<div class="oc-tile" style="text-align:center; padding:32px 24px;">'
+        f'<div style="color:#475569; font-size:13px;">'
+        f'<span class="live-dot"></span>{_fallback_msg}</div>'
+        f'</div>',
         unsafe_allow_html=True,
     )
 
@@ -2539,7 +2550,19 @@ st.markdown('<div class="section-header">Signal Accuracy Tracker</div>', unsafe_
 accuracy_data = compute_accuracy_tracker(btc_yearly, fng30)
 
 if accuracy_data is None:
-    st.markdown('<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;"><div style="font-size:28px; margin-bottom:8px;">📊</div><div style="font-size:14px;">Insufficient history to compute accuracy — check back after 30 days of data</div></div>', unsafe_allow_html=True)
+    if btc_yearly is None:
+        _acc_msg = "BTC price history loading — auto-retrying in 5 minutes"
+    elif not _fng30_entries:
+        _acc_msg = "Fear & Greed history loading — auto-retrying in 5 minutes"
+    else:
+        _acc_msg = "Computing signal accuracy — check back shortly"
+    st.markdown(
+        f'<div class="oc-tile" style="text-align:center; padding:32px 24px;">'
+        f'<div style="color:#475569; font-size:13px;">'
+        f'<span class="live-dot"></span>{_acc_msg}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 else:
     fear_returns_7d  = [r["return"] for r in accuracy_data if r["signal"] == "Fear Reversal Signal"  and r["period"] == "7d"]
     greed_returns_7d = [r["return"] for r in accuracy_data if r["signal"] == "Greed Reversal Signal" and r["period"] == "7d"]
