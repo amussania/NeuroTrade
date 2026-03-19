@@ -1839,12 +1839,19 @@ with right:
 
         if onchain:
             difficulty_raw = onchain.get("difficulty", 0)
+            hash_rate = 0
             if difficulty_raw:
-                hash_rate = (difficulty_raw * (2**32)) / 600 / 1e18
-                if hash_rate > 1500:
-                    hash_rate = hash_rate / 1000
-            else:
-                hash_rate = onchain.get("hash_rate", 0) / 1e9
+                raw_hr = (difficulty_raw * (2**32)) / 600 / 1e18
+                if 400 <= raw_hr <= 1200:
+                    hash_rate = raw_hr
+                elif raw_hr > 1200:
+                    for divisor in [10, 100, 1000, 10000]:
+                        adjusted = raw_hr / divisor
+                        if 400 <= adjusted <= 1200:
+                            hash_rate = adjusted
+                            break
+                if hash_rate == 0:
+                    hash_rate = onchain.get("hash_rate", 0) / 1e9
             difficulty = difficulty_raw / 1e12
             n_tx       = onchain.get("n_tx", 0)
             blk_time   = onchain.get("minutes_between_blocks", 0)
