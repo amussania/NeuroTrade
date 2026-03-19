@@ -602,10 +602,11 @@ def fetch_prices():
     )
     for attempt in range(3):
         try:
-            time.sleep(attempt * 2)
+            if attempt > 0:
+                time.sleep(attempt * 5)
             r = requests.get(url, timeout=15, headers=HEADERS)
             if r.status_code == 429:
-                time.sleep(10)
+                time.sleep(15)
                 continue
             r.raise_for_status()
             return r.json()
@@ -748,12 +749,12 @@ def fetch_crypto_news(query="crypto OR bitcoin OR ethereum"):
     except Exception:
         return None
 
-@st.cache_data(ttl=900, show_spinner=False)
+@st.cache_data(ttl=1800, show_spinner=False)
 def fetch_chart(coin_id: str):
     # Free CoinGecko tier: days=7 auto-returns hourly data; no interval param needed
-    # 1-second delay per call to respect the free-tier rate limit (30 req/min).
+    # 2-second delay per call to respect the free-tier rate limit (30 req/min).
     # Because this function is cached, the sleep only runs on actual API requests.
-    time.sleep(1)
+    time.sleep(2)
     url = (
         f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
         "?vs_currency=usd&days=7"
@@ -1084,6 +1085,33 @@ def compute_accuracy_tracker(btc_yearly, fng30):
                     })
     return results if results else None
 
+def run_health_check(prices, fng, onchain, charts,
+                     news, macro_dff, macro_dxy,
+                     selected_coin):
+    issues = []
+
+    if prices is None:
+        issues.append("prices")
+    elif selected_coin not in prices:
+        issues.append("selected_coin_price")
+
+    if fng is None or not fng.get("data"):
+        issues.append("fear_greed")
+
+    if onchain is None:
+        issues.append("onchain")
+
+    if charts.get(selected_coin) is None:
+        issues.append("chart")
+
+    if macro_dff is None and macro_dxy is None:
+        issues.append("macro")
+
+    if news is None:
+        issues.append("news")
+
+    return issues
+
 # ── FETCH ALL DATA ────────────────────────────────────────────────────────────
 with st.spinner("Loading market data…"):
     prices      = fetch_prices()
@@ -1100,6 +1128,17 @@ with st.spinner("Loading market data…"):
     macro_t10   = fetch_fred_series("T10YIE",   FRED_API_KEY)
     macro_unem  = fetch_fred_series("UNRATE",   FRED_API_KEY)
     charts      = {st.session_state.selected_asset: fetch_chart(st.session_state.selected_asset)}
+
+health_issues = run_health_check(
+    prices, fng, onchain, charts, news,
+    macro_dff, macro_dxy,
+    st.session_state.selected_asset
+)
+
+if health_issues:
+    st.session_state['health_issues'] = health_issues
+else:
+    st.session_state['health_issues'] = []
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HEADER
@@ -1192,6 +1231,32 @@ if st.session_state.theme == "light":
     }
     </style>
     """, unsafe_allow_html=True)
+
+if st.session_state.get('health_issues'):
+    _issues = st.session_state['health_issues']
+    _issue_map = {
+        'prices':              'Live prices',
+        'selected_coin_price': 'Selected asset price',
+        'fear_greed':          'Fear & Greed index',
+        'onchain':             'Bitcoin on-chain data',
+        'chart':               'Price chart',
+        'macro':               'Macro indicators',
+        'news':                'News feed',
+    }
+    _issue_labels = [_issue_map.get(i, i) for i in _issues]
+    st.markdown(
+        f'<div style="background:rgba(234,179,8,0.06); '
+        f'border:1px solid rgba(234,179,8,0.15); '
+        f'border-radius:12px; padding:10px 20px; '
+        f'margin-bottom:16px; display:flex; '
+        f'align-items:center; gap:12px;">'
+        f'<span style="color:#EAB308; font-size:12px; '
+        f'font-weight:600;">⚠ Some data is refreshing: '
+        f'{", ".join(_issue_labels)}. '
+        f'Auto-retrying — full data loads within 5 minutes.'
+        f'</span></div>',
+        unsafe_allow_html=True,
+    )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # COMBINED INTELLIGENCE SCORE
@@ -1529,9 +1594,13 @@ with right:
                     unsafe_allow_html=True)
 
         if onchain:
-            hash_rate_raw = onchain.get("hash_rate", 0)
-            hash_rate  = hash_rate_raw / 1e9
-            difficulty = onchain.get("difficulty", 0) / 1e12
+            difficulty_raw = onchain.get("difficulty", 0)
+            blk_time_sec = onchain.get("minutes_between_blocks", 10) * 60
+            if difficulty_raw and blk_time_sec:
+                hash_rate = (difficulty_raw * (2**32)) / blk_time_sec / 1e18
+            else:
+                hash_rate = 0
+            difficulty = difficulty_raw / 1e12
             n_tx       = onchain.get("n_tx", 0)
             blk_time   = onchain.get("minutes_between_blocks", 0)
             total_btc  = onchain.get("totalbc", 0) / 1e8
