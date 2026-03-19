@@ -1368,6 +1368,95 @@ def run_health_check(prices, fng, onchain, charts,
 
     return issues
 
+# ── ALERT SYSTEM ──────────────────────────────────────────────────────────────
+ALERT_FILE = "alert_subscribers.csv"
+
+def send_alert_email(to_email: str, subject: str, body: str) -> bool:
+    """Send a plain-text alert email via Gmail SSL. Returns True on success."""
+    import smtplib, ssl
+    smtp_user = st.secrets.get("SMTP_USER", "")
+    smtp_pass = st.secrets.get("SMTP_PASS", "")
+    if not smtp_user or not smtp_pass:
+        return False
+    try:
+        ctx = ssl.create_default_context()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ctx) as server:
+            server.login(smtp_user, smtp_pass)
+            message = (
+                f"From: NeuroTrade Alerts <{smtp_user}>\r\n"
+                f"To: {to_email}\r\n"
+                f"Subject: {subject}\r\n\r\n"
+                f"{body}"
+            )
+            server.sendmail(smtp_user, to_email, message)
+        return True
+    except Exception:
+        return False
+
+
+def load_alert_subscribers() -> list:
+    """Return list of email strings from ALERT_FILE."""
+    import csv, os
+    if not os.path.exists(ALERT_FILE):
+        return []
+    try:
+        with open(ALERT_FILE, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            return [row["email"] for row in reader if row.get("email")]
+    except Exception:
+        return []
+
+
+def save_alert_subscriber(email: str) -> bool:
+    """Append email to ALERT_FILE. Returns True if newly added, False if duplicate."""
+    import csv, os
+    existing = load_alert_subscribers()
+    if email in existing:
+        return False
+    file_exists = os.path.exists(ALERT_FILE)
+    try:
+        with open(ALERT_FILE, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["email"])
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow({"email": email})
+        return True
+    except Exception:
+        return False
+
+
+def check_and_send_alerts(score: float, coin: str, fng_value: int | None) -> None:
+    """Fire alert emails when score or FNG crosses key thresholds."""
+    subscribers = load_alert_subscribers()
+    if not subscribers:
+        return
+    alerts = []
+    if score >= 70:
+        alerts.append((
+            f"NeuroTrade BUY Signal — {coin.upper()} ({score:.0f}/100)",
+            f"NeuroTrade detected a strong BUY signal for {coin.upper()}.\n\n"
+            f"Intelligence Score: {score:.0f}/100\n\n"
+            "Log in to NeuroTrade for full analysis.",
+        ))
+    elif score <= 30:
+        alerts.append((
+            f"NeuroTrade SELL/CAUTION Signal — {coin.upper()} ({score:.0f}/100)",
+            f"NeuroTrade detected a SELL/CAUTION signal for {coin.upper()}.\n\n"
+            f"Intelligence Score: {score:.0f}/100\n\n"
+            "Log in to NeuroTrade for full analysis.",
+        ))
+    if fng_value is not None and fng_value <= 20:
+        alerts.append((
+            f"NeuroTrade: Extreme Fear Alert (FNG {fng_value})",
+            f"The Fear & Greed Index has dropped to {fng_value} — Extreme Fear territory.\n\n"
+            "Historically this has been a contrarian buy opportunity. "
+            "Log in to NeuroTrade for full analysis.",
+        ))
+    for subject, body in alerts:
+        for email in subscribers:
+            send_alert_email(email, subject, body)
+
+
 # ── FETCH ALL DATA ────────────────────────────────────────────────────────────
 with st.spinner("Loading market data…"):
     prices      = fetch_prices()
@@ -1560,13 +1649,6 @@ score, comp_scores, explanation = compute_intelligence_score(
     prices, fng, onchain, charts, coin_id=selected_coin
 )
 
-_fng_val_for_alert = (
-    int(fng["data"][0]["value"])
-    if fng and "data" in fng
-    else None
-)
-check_and_send_alerts(score, selected_coin, _fng_val_for_alert)
-
 # On-chain available only for BTC
 has_onchain = (selected_coin == "bitcoin")
 sym = selected_meta["symbol"]
@@ -1696,6 +1778,13 @@ else:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+_fng_val_for_alert = (
+    int(fng["data"][0]["value"])
+    if fng and "data" in fng
+    else None
+)
+check_and_send_alerts(score, selected_coin, _fng_val_for_alert)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MARKET PRICES
@@ -3161,195 +3250,6 @@ def save_email(email: str) -> bool:
             w.writerow(["email", "timestamp"])
         w.writerow([email, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")])
     return True
-
-def send_alert_email(to_email: str, subject: str, body: str) -> bool:
-    try:
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
-
-        smtp_user = st.secrets.get("SMTP_USER", "")
-        smtp_pass = st.secrets.get("SMTP_PASS", "")
-
-        if not smtp_user or not smtp_pass:
-            return False
-
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"]    = smtp_user
-        msg["To"]      = to_email
-
-        html_body = f"""
-        <html><body style="font-family:Inter,sans-serif;
-        background:#0B1120;color:#CBD5E1;padding:32px;">
-        <div style="max-width:600px;margin:0 auto;">
-        <div style="font-size:24px;font-weight:900;
-        background:linear-gradient(90deg,#00D4FF,#7C3AED);
-        -webkit-background-clip:text;
-        -webkit-text-fill-color:transparent;
-        margin-bottom:24px;">⬡ NeuroTrade</div>
-        <div style="background:#1E293B;border:1px solid #334155;
-        border-radius:16px;padding:24px;">
-        {body}
-        </div>
-        <div style="color:#334155;font-size:12px;margin-top:24px;">
-        NeuroTrade · AI Crypto Intelligence · Not financial advice
-        </div>
-        </div></body></html>
-        """
-
-        msg.attach(MIMEText(html_body, "html"))
-
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(smtp_user, smtp_pass)
-            server.sendmail(smtp_user, to_email, msg.as_string())
-        return True
-    except Exception:
-        return False
-
-ALERT_FILE = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "alerts.csv"
-)
-
-def load_alert_subscribers() -> list:
-    if not os.path.exists(ALERT_FILE):
-        return []
-    try:
-        with open(ALERT_FILE, newline="", encoding="utf-8") as f:
-            return [row[0] for row in csv.reader(f) if row]
-    except Exception:
-        return []
-
-def save_alert_subscriber(email: str) -> bool:
-    email = email.strip().lower()
-    exists = False
-    if os.path.exists(ALERT_FILE):
-        try:
-            with open(ALERT_FILE, newline="",
-                      encoding="utf-8") as f:
-                exists = any(
-                    row[0] == email
-                    for row in csv.reader(f) if row
-                )
-        except Exception:
-            pass
-    if exists:
-        return False
-    write_header = not os.path.exists(ALERT_FILE)
-    with open(ALERT_FILE, "a", newline="",
-              encoding="utf-8") as f:
-        w = csv.writer(f)
-        if write_header:
-            w.writerow(["email", "timestamp"])
-        w.writerow([email,
-                   datetime.utcnow().strftime(
-                       "%Y-%m-%d %H:%M:%S UTC")])
-    return True
-
-def check_and_send_alerts(score, coin_id, fng_val):
-    if score is None:
-        return
-
-    alert_key = f"last_alert_{coin_id}"
-    last_score = st.session_state.get(alert_key, 50)
-
-    alert_subject = None
-    alert_body    = None
-
-    if score >= 70 and last_score < 70:
-        alert_subject = (
-            f"NeuroTrade Alert: "
-            f"{COINS[coin_id]['symbol']} entered Strong Bull"
-        )
-        alert_body = f"""
-        <h2 style="color:#10B981;">
-        🟢 Strong Bull Signal Detected</h2>
-        <p style="color:#CBD5E1;font-size:16px;">
-        <strong style="color:#FFFFFF;">
-        {COINS[coin_id]['name']}</strong>
-        Intelligence Score just crossed
-        <strong style="color:#10B981;">70</strong>,
-        entering Strong Bull territory.</p>
-        <div style="background:#0B1120;border-radius:12px;
-        padding:16px;margin:16px 0;">
-        <div style="font-size:48px;font-weight:900;
-        color:#10B981;">{score}</div>
-        <div style="color:#64748B;font-size:13px;">
-        Strong Bull · Combined Intelligence Score</div>
-        </div>
-        <p style="color:#94A3B8;font-size:13px;">
-        Fear & Greed: {fng_val} ·
-        Historically {COINS[coin_id]['symbol']} has shown
-        positive returns following Strong Bull signals.</p>
-        <p style="color:#475569;font-size:12px;">
-        View live dashboard:
-        https://neurotrade-ai.streamlit.app</p>
-        """
-
-    elif score <= 30 and last_score > 30:
-        alert_subject = (
-            f"NeuroTrade Alert: "
-            f"{COINS[coin_id]['symbol']} entered Strong Bear"
-        )
-        alert_body = f"""
-        <h2 style="color:#EF4444;">
-        🔴 Strong Bear Signal Detected</h2>
-        <p style="color:#CBD5E1;font-size:16px;">
-        <strong style="color:#FFFFFF;">
-        {COINS[coin_id]['name']}</strong>
-        Intelligence Score just dropped below
-        <strong style="color:#EF4444;">30</strong>,
-        entering Strong Bear territory.</p>
-        <div style="background:#0B1120;border-radius:12px;
-        padding:16px;margin:16px 0;">
-        <div style="font-size:48px;font-weight:900;
-        color:#EF4444;">{score}</div>
-        <div style="color:#64748B;font-size:13px;">
-        Strong Bear · Combined Intelligence Score</div>
-        </div>
-        <p style="color:#94A3B8;font-size:13px;">
-        Fear & Greed: {fng_val} ·
-        Historically extreme fear has preceded
-        recovery 70% of the time within 7 days.</p>
-        <p style="color:#475569;font-size:12px;">
-        View live dashboard:
-        https://neurotrade-ai.streamlit.app</p>
-        """
-
-    elif fng_val is not None and fng_val <= 20:
-        alert_subject = (
-            "NeuroTrade Alert: Extreme Fear — "
-            "Historical Recovery Zone"
-        )
-        alert_body = f"""
-        <h2 style="color:#F97316;">
-        ⚠️ Extreme Fear Alert</h2>
-        <p style="color:#CBD5E1;font-size:16px;">
-        Crypto Fear & Greed Index just hit
-        <strong style="color:#EF4444;">{fng_val}</strong>
-        — deep Extreme Fear territory.</p>
-        <div style="background:#0B1120;border-radius:12px;
-        padding:16px;margin:16px 0;">
-        <div style="font-size:48px;font-weight:900;
-        color:#EF4444;">{fng_val}</div>
-        <div style="color:#64748B;font-size:13px;">
-        Extreme Fear · Fear & Greed Index</div>
-        </div>
-        <p style="color:#94A3B8;font-size:13px;">
-        NeuroTrade signal accuracy data shows 70% of
-        extreme fear readings preceded recovery
-        within 7 days.</p>
-        <p style="color:#475569;font-size:12px;">
-        View live dashboard:
-        https://neurotrade-ai.streamlit.app</p>
-        """
-
-    if alert_subject and alert_body:
-        subscribers = load_alert_subscribers()
-        for email in subscribers:
-            send_alert_email(email, alert_subject, alert_body)
-        st.session_state[alert_key] = score
 
 st.markdown('<div class="section-header">Early Access</div>', unsafe_allow_html=True)
 
