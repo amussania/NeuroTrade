@@ -1065,6 +1065,13 @@ def make_terminal_chart(ohlc_df, vol_df, meta, days=7):
         hovermode="x unified",
         hoverdistance=50,
         dragmode="pan",
+        newshape=dict(line=dict(color="#00D4FF")),
+        modebar=dict(
+            bgcolor="rgba(0,0,0,0)",
+            color="#475569",
+            activecolor="#00D4FF",
+            orientation="h",
+        ),
         title=dict(
             text=(
                 f"<b style='color:#FFFFFF; font-size:16px;'>{meta['name']}</b>"
@@ -1078,6 +1085,9 @@ def make_terminal_chart(ohlc_df, vol_df, meta, days=7):
             x=0.01, xanchor="left",
         ),
         xaxis=dict(
+            fixedrange=False,
+            minallowed=ohlc_df["ts"].iloc[0],
+            maxallowed=ohlc_df["ts"].iloc[-1],
             showgrid=True,
             gridcolor="rgba(255,255,255,0.04)",
             showline=False,
@@ -1106,6 +1116,9 @@ def make_terminal_chart(ohlc_df, vol_df, meta, days=7):
             spikemode="across",
         ),
         yaxis=dict(
+            fixedrange=False,
+            minallowed=ohlc_df["low"].min() * 0.95,
+            maxallowed=ohlc_df["high"].max() * 1.05,
             showgrid=True,
             gridcolor="rgba(255,255,255,0.04)",
             showline=False,
@@ -1296,8 +1309,13 @@ with st.spinner("Loading market data…"):
     macro_t10   = fetch_fred_series("T10YIE",   FRED_API_KEY)
     macro_unem  = fetch_fred_series("UNRATE",   FRED_API_KEY)
     charts      = {st.session_state.selected_asset: fetch_chart(st.session_state.selected_asset)}
-    ohlc_data   = fetch_ohlc(st.session_state.selected_asset, days=7)
-    vol_data    = fetch_volume(st.session_state.selected_asset, days=7)
+    if 'chart_days' not in st.session_state:
+        st.session_state.chart_days = 7
+
+    ohlc_data   = fetch_ohlc(st.session_state.selected_asset,
+                             days=st.session_state.chart_days)
+    vol_data    = fetch_volume(st.session_state.selected_asset,
+                               days=st.session_state.chart_days)
 
 health_issues = run_health_check(
     prices, fng, onchain, charts, news,
@@ -1652,7 +1670,28 @@ if prices and selected_coin in prices:
         unsafe_allow_html=True,
     )
 
-    _terminal_fig = make_terminal_chart(ohlc_data, vol_data, selected_meta, days=7)
+    _tf_col, _ = st.columns([2, 5])
+    with _tf_col:
+        _tf_options = {"7D": 7, "30D": 30, "90D": 90}
+        _tf_cols = st.columns(3, gap="small")
+        for _tf_col_item, (_tf_label, _tf_days) in zip(_tf_cols, _tf_options.items()):
+            with _tf_col_item:
+                _tf_active = st.session_state.chart_days == _tf_days
+                _tf_style = (
+                    f"background:{asset_color}; color:#000000;"
+                    if _tf_active else
+                    "background:var(--bg-card); color:var(--text-faint);"
+                )
+                if st.button(
+                    _tf_label,
+                    key=f"tf_{_tf_days}",
+                    use_container_width=True,
+                ):
+                    st.session_state.chart_days = _tf_days
+                    st.rerun()
+
+    _terminal_fig = make_terminal_chart(ohlc_data, vol_data, selected_meta,
+                                        days=st.session_state.chart_days)
 
     if _terminal_fig:
         st.plotly_chart(
