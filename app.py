@@ -535,6 +535,50 @@ def log_signal_snapshot(prices, fng, onchain, charts, trending, coin_id, score, 
     except Exception:
         pass
 
+
+def label_past_outcomes():
+    try:
+        sb = get_supabase()
+        if not sb:
+            return
+        seven_days_ago = (datetime.utcnow() - pd.Timedelta(days=7)).isoformat()
+        cutoff = (datetime.utcnow() - pd.Timedelta(days=8)).isoformat()
+        response = (
+            sb.table('signal_snapshots')
+            .select('id, asset, timestamp, intelligence_score')
+            .is_('outcome_7d', 'null')
+            .lt('timestamp', seven_days_ago)
+            .gt('timestamp', cutoff)
+            .execute()
+        )
+        rows = response.data
+        if not rows:
+            return
+        prices_now = fetch_prices()
+        if not prices_now:
+            return
+        for row in rows:
+            coin_id = row['asset']
+            if coin_id not in prices_now:
+                continue
+            current_price = prices_now[coin_id].get('usd')
+            change_7d = prices_now[coin_id].get('usd_7d_change')
+            if current_price is None or change_7d is None:
+                continue
+            if change_7d > 5:
+                outcome_label = 'bullish'
+            elif change_7d < -5:
+                outcome_label = 'bearish'
+            else:
+                outcome_label = 'neutral'
+            sb.table('signal_snapshots').update({
+                'outcome_7d': round(change_7d, 2),
+                'outcome_label': outcome_label,
+            }).eq('id', row['id']).execute()
+    except Exception:
+        pass
+
+
 # ── Constants ─────────────────────────────────────────────────────────────────
 COINS = {
     "bitcoin":       {"name": "Bitcoin",   "symbol": "BTC",  "color": "#F7931A"},
