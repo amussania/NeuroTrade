@@ -710,6 +710,44 @@ def fetch_btc_yearly():
     except Exception:
         return None
 
+@st.cache_data(ttl=1800, show_spinner=False)
+def fetch_ohlc(coin_id: str, days: int = 7):
+    time.sleep(2)
+    url = (
+        f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc"
+        f"?vs_currency=usd&days={days}"
+    )
+    try:
+        r = requests.get(url, timeout=20, headers=HEADERS)
+        r.raise_for_status()
+        data = r.json()
+        if not data or not isinstance(data, list):
+            return None
+        df = pd.DataFrame(data, columns=["ts", "open", "high", "low", "close"])
+        df["ts"] = pd.to_datetime(df["ts"], unit="ms")
+        return df
+    except Exception:
+        return None
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def fetch_volume(coin_id: str, days: int = 7):
+    time.sleep(2)
+    url = (
+        f"https://api.coingecko.com/api/v3/coins/{coin_id}"
+        f"/market_chart?vs_currency=usd&days={days}"
+    )
+    try:
+        r = requests.get(url, timeout=20, headers=HEADERS)
+        r.raise_for_status()
+        data = r.json()
+        if "total_volumes" not in data:
+            return None
+        df = pd.DataFrame(data["total_volumes"], columns=["ts", "volume"])
+        df["ts"] = pd.to_datetime(df["ts"], unit="ms")
+        return df
+    except Exception:
+        return None
+
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_whale_transactions():
     try:
@@ -962,6 +1000,136 @@ def make_fng_line_30(fng_data):
     )
     return fig
 
+def make_terminal_chart(ohlc_df, vol_df, meta, days=7):
+    if ohlc_df is None or ohlc_df.empty:
+        return None
+
+    color = meta["color"]
+    symbol = meta["symbol"]
+
+    fig = make_subplots(
+        rows=2, cols=1,
+        shared_xaxes=True,
+        row_heights=[0.75, 0.25],
+        vertical_spacing=0.02,
+    )
+
+    # Candlestick
+    fig.add_trace(go.Candlestick(
+        x=ohlc_df["ts"],
+        open=ohlc_df["open"],
+        high=ohlc_df["high"],
+        low=ohlc_df["low"],
+        close=ohlc_df["close"],
+        name=symbol,
+        increasing=dict(line=dict(color="#10B981", width=1),
+                       fillcolor="#10B981"),
+        decreasing=dict(line=dict(color="#EF4444", width=1),
+                       fillcolor="#EF4444"),
+        hovertext=symbol,
+        hoverlabel=dict(bgcolor="#1E293B", font=dict(color="#CBD5E1")),
+    ), row=1, col=1)
+
+    # Volume bars
+    if vol_df is not None and not vol_df.empty:
+        vol_colors = []
+        for i in range(len(ohlc_df)):
+            if i == 0:
+                vol_colors.append("#10B981")
+            elif ohlc_df["close"].iloc[i] >= ohlc_df["open"].iloc[i]:
+                vol_colors.append("rgba(16,185,129,0.5)")
+            else:
+                vol_colors.append("rgba(239,68,68,0.5)")
+
+        fig.add_trace(go.Bar(
+            x=vol_df["ts"],
+            y=vol_df["volume"],
+            name="Volume",
+            marker=dict(color="rgba(100,116,139,0.4)", line=dict(width=0)),
+            hovertemplate="Vol: $%{y:,.0f}<extra></extra>",
+        ), row=2, col=1)
+
+    # Price range annotation
+    price_min = ohlc_df["low"].min()
+    price_max = ohlc_df["high"].max()
+    chg = ((ohlc_df["close"].iloc[-1] / ohlc_df["open"].iloc[0]) - 1) * 100
+    chg_color = "#10B981" if chg >= 0 else "#EF4444"
+    arrow = "▲" if chg >= 0 else "▼"
+
+    fig.update_layout(
+        paper_bgcolor="#0B1120",
+        plot_bgcolor="#0B1120",
+        margin=dict(l=8, r=8, t=48, b=8),
+        height=480,
+        showlegend=False,
+        hovermode="x unified",
+        hoverdistance=50,
+        dragmode="pan",
+        title=dict(
+            text=(
+                f"<b style='color:#FFFFFF; font-size:16px;'>{meta['name']}</b>"
+                f"  <span style='color:{chg_color}; font-size:13px;'>"
+                f"{arrow} {abs(chg):.2f}%</span>"
+                f"  <span style='color:#475569; font-size:12px;'>{days}D</span>"
+                f"  <span style='color:#334155; font-size:11px;'>"
+                f"  H: ${price_max:,.2f}  L: ${price_min:,.2f}</span>"
+            ),
+            font=dict(size=14, family="Inter"),
+            x=0.01, xanchor="left",
+        ),
+        xaxis=dict(
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.04)",
+            showline=False,
+            zeroline=False,
+            rangeslider=dict(visible=False),
+            tickfont=dict(size=10, color="#475569", family="Inter"),
+            tickformat="%b %d",
+            showspikes=True,
+            spikecolor="#475569",
+            spikethickness=1,
+            spikedash="dot",
+            spikemode="across",
+        ),
+        xaxis2=dict(
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.04)",
+            showline=False,
+            zeroline=False,
+            rangeslider=dict(visible=False),
+            tickfont=dict(size=10, color="#475569", family="Inter"),
+            tickformat="%b %d",
+            showspikes=True,
+            spikecolor="#475569",
+            spikethickness=1,
+            spikedash="dot",
+            spikemode="across",
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.04)",
+            showline=False,
+            zeroline=False,
+            tickfont=dict(size=10, color="#475569", family="Inter"),
+            tickprefix="$",
+            tickformat=",.0f",
+            side="right",
+            showspikes=True,
+            spikecolor="#475569",
+            spikethickness=1,
+        ),
+        yaxis2=dict(
+            showgrid=False,
+            showline=False,
+            zeroline=False,
+            tickfont=dict(size=9, color="#334155", family="Inter"),
+            side="right",
+            tickformat=".2s",
+        ),
+        font=dict(family="Inter"),
+    )
+    return fig
+
 # ── Combined Intelligence Score ───────────────────────────────────────────────
 def compute_intelligence_score(prices, fng, onchain, charts, coin_id="bitcoin"):
     """
@@ -1128,6 +1296,8 @@ with st.spinner("Loading market data…"):
     macro_t10   = fetch_fred_series("T10YIE",   FRED_API_KEY)
     macro_unem  = fetch_fred_series("UNRATE",   FRED_API_KEY)
     charts      = {st.session_state.selected_asset: fetch_chart(st.session_state.selected_asset)}
+    ohlc_data   = fetch_ohlc(st.session_state.selected_asset, days=7)
+    vol_data    = fetch_volume(st.session_state.selected_asset, days=7)
 
 health_issues = run_health_check(
     prices, fng, onchain, charts, news,
@@ -1472,28 +1642,49 @@ if prices and selected_coin in prices:
                         config={"displayModeBar": False})
 
     # ═══════════════════════════════════════════════════════════════════════════════
-    # 7-DAY PRICE HISTORY CHARTS
+    # PRICE CHART — TRADING TERMINAL
     # ═══════════════════════════════════════════════════════════════════════════════
     st.markdown(
-        f'<div class="section-header">7-Day Price History &nbsp;·&nbsp; '
-        f'<span style="color:{asset_color};">{selected_meta["name"]}</span></div>',
+        f'<div class="section-header">Price Chart &nbsp;·&nbsp; '
+        f'<span style="color:{asset_color};">{selected_meta["name"]}</span>'
+        f'<span style="color:#334155; font-size:11px; font-weight:400;">'
+        f'&nbsp;&nbsp;Scroll to zoom · Drag to pan · Click fullscreen ↗</span></div>',
         unsafe_allow_html=True,
     )
 
-    # Single full-width chart for the selected asset only
-    _chart_df  = charts.get(selected_coin)
-    _chart_fig = make_price_chart(_chart_df, selected_meta)
-    if _chart_fig:
-        st.plotly_chart(_chart_fig, use_container_width=True,
-                        config={"displayModeBar": False})
+    _terminal_fig = make_terminal_chart(ohlc_data, vol_data, selected_meta, days=7)
+
+    if _terminal_fig:
+        st.plotly_chart(
+            _terminal_fig,
+            use_container_width=True,
+            config={
+                "displayModeBar": True,
+                "displaylogo": False,
+                "scrollZoom": True,
+                "modeBarButtonsToRemove": [
+                    "select2d", "lasso2d", "autoScale2d",
+                    "hoverClosestCartesian", "hoverCompareCartesian",
+                    "toggleSpikelines"
+                ],
+                "modeBarButtonsToAdd": ["drawline", "drawopenpath"],
+                "toImageButtonOptions": {
+                    "format": "png",
+                    "filename": f"neurotrade_{selected_meta['symbol']}_chart",
+                    "height": 480,
+                    "width": 1200,
+                    "scale": 2
+                },
+            }
+        )
     else:
         st.markdown(
-            f'<div class="oc-tile" style="height:280px; display:flex; flex-direction:column;'
-            f' align-items:center; justify-content:center; gap:10px;">'
+            f'<div class="oc-tile" style="height:480px; display:flex; '
+            f'flex-direction:column; align-items:center; justify-content:center; gap:10px;">'
             f'<div style="font-size:32px;">📡</div>'
             f'<div style="color:#475569; font-size:14px; font-weight:600;">'
-            f'{selected_meta["name"]} chart loading…</div>'
-            f'<div style="color:#334155; font-size:12px;">CoinGecko rate limit — refreshes in 5 min</div>'
+            f'{selected_meta["name"]} chart loading</div>'
+            f'<div style="color:#334155; font-size:12px;">Refreshes in 5 min</div>'
             f'</div>',
             unsafe_allow_html=True,
         )
