@@ -1065,7 +1065,6 @@ def make_terminal_chart(ohlc_df, vol_df, meta, days=7):
         hovermode="x unified",
         hoverdistance=50,
         dragmode="pan",
-        newshape=dict(line=dict(color="#00D4FF")),
         modebar=dict(
             bgcolor="rgba(0,0,0,0)",
             color="#475569",
@@ -1086,8 +1085,6 @@ def make_terminal_chart(ohlc_df, vol_df, meta, days=7):
         ),
         xaxis=dict(
             fixedrange=False,
-            minallowed=ohlc_df["ts"].iloc[0],
-            maxallowed=ohlc_df["ts"].iloc[-1],
             showgrid=True,
             gridcolor="rgba(255,255,255,0.04)",
             showline=False,
@@ -1117,8 +1114,6 @@ def make_terminal_chart(ohlc_df, vol_df, meta, days=7):
         ),
         yaxis=dict(
             fixedrange=False,
-            minallowed=ohlc_df["low"].min() * 0.95,
-            maxallowed=ohlc_df["high"].max() * 1.05,
             showgrid=True,
             gridcolor="rgba(255,255,255,0.04)",
             showline=False,
