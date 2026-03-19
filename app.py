@@ -1841,6 +1841,8 @@ with right:
             difficulty_raw = onchain.get("difficulty", 0)
             if difficulty_raw:
                 hash_rate = (difficulty_raw * (2**32)) / 600 / 1e18
+                if hash_rate > 1500:
+                    hash_rate = hash_rate / 1000
             else:
                 hash_rate = onchain.get("hash_rate", 0) / 1e9
             difficulty = difficulty_raw / 1e12
@@ -2638,9 +2640,11 @@ elif len(whale_txs) == 0:
         unsafe_allow_html=True,
     )
 else:
-    _largest   = whale_txs[0]["btc"]
+    _largest   = max(w["btc"] for w in whale_txs)
     _total_btc = sum(w["btc"] for w in whale_txs)
     _count     = len(whale_txs)
+    if _total_btc < _largest:
+        _total_btc = _largest
     _count_color = "#EF4444" if _count >= 20 else "#F97316" if _count >= 10 else "#10B981"
 
     # ── Summary tiles ────────────────────────────────────────────────────────
