@@ -1085,6 +1085,10 @@ def make_terminal_chart(ohlc_df, vol_df, meta, days=7):
         ),
         xaxis=dict(
             fixedrange=False,
+            range=[
+                ohlc_df["ts"].iloc[0],
+                ohlc_df["ts"].iloc[-1],
+            ],
             showgrid=True,
             gridcolor="rgba(255,255,255,0.04)",
             showline=False,
@@ -1667,18 +1671,27 @@ if prices and selected_coin in prices:
 
     _tf_col, _ = st.columns([2, 5])
     with _tf_col:
-        _tf_options = {"7D": 7, "30D": 30, "90D": 90}
+        st.markdown(f"""
+<style>
+div[data-testid="stHorizontalBlock"] button {{
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-faint) !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+}}
+</style>
+""", unsafe_allow_html=True)
+
         _tf_cols = st.columns(3, gap="small")
-        for _tf_col_item, (_tf_label, _tf_days) in zip(_tf_cols, _tf_options.items()):
+        _tf_options = {7: "7D", 30: "30D", 90: "90D"}
+        for _tf_col_item, (_tf_days, _tf_label) in zip(_tf_cols, _tf_options.items()):
             with _tf_col_item:
-                _tf_active = st.session_state.chart_days == _tf_days
-                _tf_style = (
-                    f"background:{asset_color}; color:#000000;"
-                    if _tf_active else
-                    "background:var(--bg-card); color:var(--text-faint);"
-                )
+                _active_marker = "● " if st.session_state.chart_days == _tf_days else ""
                 if st.button(
-                    _tf_label,
+                    f"{_active_marker}{_tf_label}",
                     key=f"tf_{_tf_days}",
                     use_container_width=True,
                 ):
