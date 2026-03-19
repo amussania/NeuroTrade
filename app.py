@@ -3304,8 +3304,6 @@ def save_email(email: str) -> bool:
         w.writerow([email, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")])
     return True
 
-render_chatbot()
-
 st.markdown('<div class="section-header">Early Access</div>', unsafe_allow_html=True)
 
 member_count = load_waitlist_count()
@@ -3529,6 +3527,205 @@ with wl_right:
 # ═══════════════════════════════════════════════════════════════════════════════
 # FOOTER
 # ═══════════════════════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+.float-btn-wrap { position:fixed; bottom:24px; right:24px; z-index:99999; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+.brain-btn { width:58px; height:58px; border-radius:50%; background:linear-gradient(135deg,#00D4FF,#7C3AED); border:none; cursor:pointer; font-size:26px; box-shadow:0 4px 24px rgba(0,212,255,0.35); display:flex; align-items:center; justify-content:center; transition:transform 0.2s; }
+.brain-btn:hover { transform:scale(1.08); }
+.wa-btn { width:58px; height:58px; border-radius:50%; background:#25D366; border:none; cursor:pointer; font-size:26px; box-shadow:0 4px 24px rgba(37,211,102,0.35); display:flex; align-items:center; justify-content:center; text-decoration:none; transition:transform 0.2s; }
+.wa-btn:hover { transform:scale(1.08); }
+.guide-panel { position:fixed; bottom:100px; right:24px; width:420px; max-height:78vh; background:#0F172A; border:1px solid #1E293B; border-radius:20px; box-shadow:0 8px 48px rgba(0,0,0,0.6); z-index:99998; display:none; flex-direction:column; overflow:hidden; }
+.guide-panel.open { display:flex; }
+.guide-header { background:linear-gradient(135deg,rgba(0,212,255,0.12),rgba(124,58,237,0.12)); padding:16px 20px; border-bottom:1px solid #1E293B; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.guide-body { overflow-y:auto; padding:16px 20px; flex:1; }
+.guide-topic-btn { background:#1E293B; border:1px solid #334155; border-radius:8px; padding:8px 12px; color:#94A3B8; font-size:12px; cursor:pointer; margin:4px; transition:all 0.2s; display:inline-block; }
+.guide-topic-btn:hover { border-color:#00D4FF; color:#00D4FF; }
+.guide-msg-bot { background:#1E293B; border-radius:12px 12px 12px 4px; padding:14px 16px; margin-bottom:10px; color:#CBD5E1; font-size:13px; line-height:1.8; }
+.guide-msg-user { background:rgba(0,212,255,0.08); border:1px solid #334155; border-radius:12px 12px 4px 12px; padding:10px 16px; margin-bottom:10px; color:#E2E8F0; font-size:13px; line-height:1.8; margin-left:20px; }
+.guide-action-btn { background:#1E293B; border:1px solid #334155; border-radius:8px; padding:8px 14px; color:#94A3B8; font-size:12px; cursor:pointer; margin-right:8px; margin-top:8px; }
+.guide-action-btn:hover { border-color:#00D4FF; color:#00D4FF; }
+.guide-action-btn.primary { background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(124,58,237,0.15)); border-color:#00D4FF; color:#00D4FF; }
+</style>
+
+<div class="float-btn-wrap">
+    <a href="https://wa.me/919811699944" target="_blank" class="wa-btn" title="Chat with founder">💬</a>
+    <button class="brain-btn" onclick="toggleGuide()" title="NeuroTrade AI Guide">🧠</button>
+</div>
+
+<div class="guide-panel" id="guidePanel">
+    <div class="guide-header">
+        <div>
+            <div style="color:#00D4FF; font-size:14px; font-weight:700;">🧠 NeuroTrade AI Guide</div>
+            <div style="color:#475569; font-size:11px; margin-top:2px;">Your personal crypto intelligence teacher</div>
+        </div>
+        <button onclick="toggleGuide()" style="background:none; border:1px solid #334155; border-radius:6px; color:#475569; padding:4px 10px; cursor:pointer; font-size:12px;">✕ Close</button>
+    </div>
+    <div class="guide-body" id="guideBody">
+        <div style="color:#64748B; font-size:12px; margin-bottom:14px; line-height:1.6;">Pick a topic to learn what it means, how to read it, and why it matters. Say you do not understand and I will explain it differently.</div>
+        <div id="topicGrid">
+            <span class="guide-topic-btn" onclick="loadTopic(0)">🧠 Intelligence Score</span>
+            <span class="guide-topic-btn" onclick="loadTopic(1)">😨 Fear & Greed</span>
+            <span class="guide-topic-btn" onclick="loadTopic(2)">⛓ On-Chain Data</span>
+            <span class="guide-topic-btn" onclick="loadTopic(3)">🐋 Whale Activity</span>
+            <span class="guide-topic-btn" onclick="loadTopic(4)">🌍 Macro Intelligence</span>
+            <span class="guide-topic-btn" onclick="loadTopic(5)">📈 Price Momentum</span>
+            <span class="guide-topic-btn" onclick="loadTopic(6)">🎯 Signal Accuracy</span>
+            <span class="guide-topic-btn" onclick="loadTopic(7)">📰 News Sentiment</span>
+            <span class="guide-topic-btn" onclick="loadTopic(8)">📊 Signal Intelligence</span>
+            <span class="guide-topic-btn" onclick="loadTopic(9)">⟠ ETH Gas Prices</span>
+            <span class="guide-topic-btn" onclick="loadTopic(10)">🔥 Trending Status</span>
+            <span class="guide-topic-btn" onclick="loadTopic(11)">🚀 How to use this</span>
+        </div>
+        <div id="chatArea" style="margin-top:12px;"></div>
+    </div>
+</div>
+
+<script>
+var currentLevel = 0;
+var currentTopic = -1;
+
+var knowledge = [
+    {
+        name: "Intelligence Score",
+        levels: [
+            "The Combined Intelligence Score is a single number from 0 to 100 that tells you how bullish or bearish the market is right now.\\n\\n0-30: Strong Bear. Serious weakness.\\n31-45: Weak Bear. More negative signals.\\n46-55: Neutral. Mixed signals.\\n56-70: Weak Bull. More positive signals.\\n71-100: Strong Bull. Serious strength.\\n\\nIt combines four signals: Fear and Greed at 30%, 24h momentum at 25%, 7 day trend at 25%, and on-chain volume at 20%.\\n\\nDid that make sense or would you like me to explain differently?",
+            "Think of the Intelligence Score like a weather forecast but for crypto.\\n\\nInstead of telling you if it will rain, it tells you if the market feels positive or negative right now.\\n\\nA score of 75 is like a sunny forecast. A score of 20 is like a storm warning.\\n\\nIs that clearer? Want me to go even simpler?",
+            "Imagine asking four friends for their opinion before making a decision. One checks the news. One checks recent price moves. One checks this week's trend. One checks network activity.\\n\\nThe Intelligence Score does exactly that. It combines four views into one number. High means mostly positive. Low means mostly negative.\\n\\nNot financial advice."
+        ]
+    },
+    {
+        name: "Fear & Greed",
+        levels: [
+            "The Fear and Greed Index measures the overall emotion of the crypto market from 0 to 100.\\n\\n0-25: Extreme Fear. People are panicking.\\n26-45: Fear. Market is nervous.\\n46-55: Neutral. No strong emotion.\\n56-75: Greed. People are excited.\\n76-100: Extreme Greed. FOMO is taking over.\\n\\nKey insight: Extreme fear has historically been a buying opportunity. Extreme greed has historically preceded corrections.\\n\\nDid that make sense?",
+            "Think of the Fear and Greed Index like the mood of a crowd at a market.\\n\\nWhen everyone is panicking and leaving, things are often on sale. When everyone is rushing in excitedly, things are often overpriced.\\n\\nThe smart move is often the opposite of the crowd.\\n\\nWant me to explain even more simply?",
+            "Imagine a fruit market. When it rains nobody comes and prices drop. That is extreme fear.\\n\\nWhen the sun shines and everyone wants fruit prices go up. That is extreme greed.\\n\\nThe Index just tells you how much it is raining or shining in crypto right now.\\n\\nNot financial advice."
+        ]
+    },
+    {
+        name: "On-Chain Data",
+        levels: [
+            "On-chain data is information recorded directly on the Bitcoin blockchain showing real network activity.\\n\\nNeuroTrade tracks:\\nHash Rate: Computing power securing Bitcoin.\\nDaily Transactions: How many transfers happened today.\\nBlock Time: How fast new blocks are created.\\nBTC Circulating: Total Bitcoin in existence.\\nNetwork Health: High, Medium or Low based on activity.\\n\\nYou can fake a price pump. You cannot fake real network activity.\\n\\nDid that make sense?",
+            "Think of Bitcoin like a city. On-chain data is the city's activity report.\\n\\nHow many cars on the roads. How busy the shops are. How much electricity is being used.\\n\\nA bustling city is healthy regardless of what estate agents say about prices. Same for Bitcoin.\\n\\nWant me to go simpler?",
+            "Want to know if a restaurant is actually popular or just has good marketing?\\n\\nYou could read their Instagram. Or you could stand outside and count real customers walking in.\\n\\nOn-chain data is counting the real customers. Nobody can fake it.\\n\\nNot financial advice."
+        ]
+    },
+    {
+        name: "Whale Activity",
+        levels: [
+            "Whales are wallets holding very large amounts of Bitcoin. When they move their Bitcoin it can significantly impact the market.\\n\\nNeuroTrade tracks unconfirmed Bitcoin transactions over 10 BTC in the mempool, the waiting room before blockchain confirmation.\\n\\nYou see: BTC amount, transaction size rating, inputs and outputs.\\n\\nWhen whales move large amounts to exchanges it can signal selling pressure. Off exchanges signals long term holding.\\n\\nDid that make sense?",
+            "Think of whales like big supermarkets. When they decide to sell off huge stock it affects prices for everyone.\\n\\nIn crypto when someone moves 500 Bitcoin worth millions of dollars that is a significant event. NeuroTrade shows you these movements in real time before they are even confirmed.\\n\\nWant me to explain even more simply?",
+            "Imagine you are at an auction. Most people bid small amounts. Then a very wealthy person walks in.\\n\\nEveryone watches them. If they buy, prices go up. If they sell, everyone gets nervous.\\n\\nWhales are those wealthy people. Tracking them gives you information most retail traders never see.\\n\\nNot financial advice."
+        ]
+    },
+    {
+        name: "Macro Intelligence",
+        levels: [
+            "Macro Intelligence tracks four US Federal Reserve indicators that influence crypto.\\n\\nFed Funds Rate: High rates mean expensive borrowing, investors avoid risky assets like crypto.\\nUS Dollar Index: Strong dollar is bearish for crypto. Weak dollar is bullish.\\n10Y Inflation Expectations: High inflation can drive investors toward crypto as a hedge.\\nUnemployment Rate: Measures overall economic health.\\n\\nDid that make sense?",
+            "When a bank offers 5% on your savings account for zero risk, why put money into volatile crypto?\\n\\nBut when savings pay almost nothing you look for better returns elsewhere. That is when crypto becomes more attractive.\\n\\nThe Federal Reserve controls those interest rates. When they raise rates crypto struggles. When they cut rates crypto benefits.\\n\\nWant me to go simpler?",
+            "Think of the economy as a water system. The Federal Reserve controls the tap.\\n\\nTighten the tap and money dries up. Risky investments like crypto suffer.\\n\\nOpen the tap and money flows. Some of it finds crypto.\\n\\nMacro Intelligence just tells you how open the tap is right now.\\n\\nNot financial advice."
+        ]
+    },
+    {
+        name: "Price Momentum",
+        levels: [
+            "Price momentum measures how fast and in which direction an asset is moving.\\n\\n24 Hour Momentum: Price change in last 24 hours. Big positive move signals short term strength.\\n7 Day Trend: Price change over the last week. Filters daily noise and shows broader direction.\\n\\nBoth account for 50% of the Intelligence Score together.\\n\\nRising trend plus positive momentum is a strong bullish signal. Falling trend plus negative momentum is a warning.\\n\\nDid that make sense?",
+            "Think of momentum like a ball rolling down a hill.\\n\\nThe 24h momentum tells you how fast it is moving right now. The 7 day trend tells you which direction the hill slopes.\\n\\nWhen both point the same way the signal is strong.\\n\\nWant me to go simpler?",
+            "Imagine you are watching a train. The 24h momentum is how fast it is moving right now. The 7 day trend is which direction the tracks are pointing.\\n\\nYou want both pointing the same way before drawing conclusions.\\n\\nNot financial advice."
+        ]
+    },
+    {
+        name: "Signal Accuracy",
+        levels: [
+            "The Signal Accuracy Tracker measures how often NeuroTrade's contrarian signals have been correct over the last 30 days.\\n\\nFear Reversal Signals: When Fear and Greed hits Extreme Fear below 30. Price historically goes up within 7 days.\\nGreed Reversal Signals: When it hits Extreme Greed above 70. Price historically goes down within 7 days.\\n\\nCurrently showing 61-65% win rate. Renaissance Technologies, the greatest trading firm in history, achieves around 66%. Anything above 55% is considered valuable.\\n\\nDid that make sense?",
+            "Think of it like a weather forecaster's track record. If they predicted rain 10 times and it rained 6 times that is 60% accuracy. Pretty good for complex systems.\\n\\nNeuroTrade checks every time Fear and Greed hit extreme levels and records what the price did 7 days later.\\n\\n61-65% means right more often than wrong. Over many decisions that adds up significantly.\\n\\nWant me to go simpler?",
+            "Imagine a coin that lands heads 62% of the time instead of 50%. Over 100 flips that makes a massive difference even though each flip feels uncertain.\\n\\nThat is what 62% signal accuracy means. Not perfect. But meaningfully better than random.\\n\\nNot financial advice."
+        ]
+    },
+    {
+        name: "News Sentiment",
+        levels: [
+            "NeuroTrade pulls live headlines from thousands of news sources every 30 minutes and classifies each as Bullish, Bearish or Neutral automatically.\\n\\nBullish keywords: surge, rally, gain, record, adoption, approve.\\nBearish keywords: crash, drop, fall, hack, ban, warning.\\n\\nCrypto markets are heavily sentiment driven. A single major story can move prices 10-20% within hours.\\n\\nSeeing the overall news tone at a glance tells you whether the narrative is positive or negative without reading dozens of articles.\\n\\nDid that make sense?",
+            "Think of news sentiment like checking the mood of a crowd before you walk into a room.\\n\\nIf you hear excited chatter the mood is positive. If you hear worried voices something is wrong.\\n\\nNeuroTrade reads the headlines so you do not have to and tells you the overall mood right now.\\n\\nWant me to go simpler?",
+            "Imagine crypto Twitter is a giant conversation. News sentiment is like having someone stand in the middle and tell you whether people sound excited or worried overall.\\n\\nYou do not need to read every tweet. Just know the general mood.\\n\\nNot financial advice."
+        ]
+    },
+    {
+        name: "Signal Intelligence",
+        levels: [
+            "Signal Intelligence gives you a 30 day overview of sentiment patterns.\\n\\nExtreme Fear Days: How many of the last 30 days had Fear and Greed below 25.\\n30 Day Average: The average sentiment score over the last month.\\nSentiment Trend: Whether today is better or worse than the 30 day average.\\nConsecutive Days in Zone: How many days in a row in the current zone.\\n\\nDid that make sense?",
+            "Think of it like a monthly weather summary.\\n\\nInstead of just today's weather you see how many stormy days there were, what the average was, and whether it is getting better or worse.\\n\\nFor crypto that means knowing whether the last 30 days were mostly fearful or greedy.\\n\\nWant me to go simpler?",
+            "Imagine checking if summer is coming. You do not just look at today. You look at the last 30 days. How many cold days? Is it getting warmer?\\n\\nSignal Intelligence does the same for market mood.\\n\\nNot financial advice."
+        ]
+    },
+    {
+        name: "ETH Gas Prices",
+        levels: [
+            "Gas prices are fees paid to process transactions on the Ethereum network, measured in Gwei.\\n\\nSafe: Cheapest, slower processing.\\nStandard: Balanced speed and cost.\\nFast: Most expensive, almost instant.\\n\\nHigh gas prices mean the Ethereum network is very busy. Lots of transactions happening. This signals high demand which is generally positive for ETH.\\n\\nLow gas prices mean the network is quiet.\\n\\nDid that make sense?",
+            "Think of gas prices like toll roads during rush hour.\\n\\nHigh traffic means higher toll because road space is scarce. Late at night the toll is cheap because the road is empty.\\n\\nHigh ETH gas prices mean rush hour on the network. Lots of people using it and paying extra to get through quickly.\\n\\nWant me to go simpler?",
+            "Imagine a busy restaurant on Saturday night. Long queue to get in. You might pay more for a table.\\n\\nThat is high gas prices. The network is packed and people are paying extra to jump the queue.\\n\\nWhen a restaurant is always full it usually means the food is good and business is booming.\\n\\nNot financial advice."
+        ]
+    },
+    {
+        name: "Trending Status",
+        levels: [
+            "Trending status shows whether the selected asset is in the top 7 most searched coins on CoinGecko right now.\\n\\nWhen an asset is trending it means retail attention is rapidly increasing. More searches, more readers, more potential buyers.\\n\\nThis matters because retail attention often precedes price movements. A trending coin frequently means a wave of new buyers is approaching.\\n\\nNeuroTrade checks this hourly and shows rank if trending.\\n\\nDid that make sense?",
+            "Think of trending status like watching what is popular on Netflix.\\n\\nWhen a show trends it means lots of people are suddenly watching. In crypto when a coin trends on CoinGecko lots of people are suddenly searching for it.\\n\\nMore attention often means more buyers coming.\\n\\nWant me to go simpler?",
+            "Imagine noticing a long queue outside a shop you never paid attention to before.\\n\\nThat queue tells you something interesting is happening even before you know what it is.\\n\\nTrending status is that queue. People are suddenly interested. Worth paying attention to.\\n\\nNot financial advice."
+        ]
+    },
+    {
+        name: "How to use this",
+        levels: [
+            "Here is the recommended way to use NeuroTrade:\\n\\n1. Check the Intelligence Score for your asset.\\n2. Look at the Signal Breakdown. Are signals aligned or conflicting?\\n3. Check Fear and Greed. Is the market in extreme territory?\\n4. Read Macro Intelligence. Are rates and the dollar working for or against crypto?\\n5. Scan News Sentiment. Is the news cycle positive or negative?\\n6. Check Whale Activity. Are large holders moving?\\n7. Look at Signal Accuracy. How reliable are current signals historically?\\n\\nUse all of these together. Never rely on one signal alone.\\n\\nDid that make sense?",
+            "Think of NeuroTrade like a doctor's consultation.\\n\\nA good doctor does not just check your temperature. They check blood pressure, history, and symptoms together.\\n\\nEach section is one vital sign. The Intelligence Score is the overall diagnosis. Use them together.\\n\\nWant me to walk through a specific example?",
+            "Imagine deciding whether to take an umbrella.\\n\\nYou check the forecast. Look out the window. Check if friends are carrying umbrellas. Look at the sky.\\n\\nNo single signal is enough. But when all of them agree you can be confident.\\n\\nThat is exactly how to use NeuroTrade.\\n\\nNot financial advice."
+        ]
+    }
+];
+
+function toggleGuide() {
+    var panel = document.getElementById('guidePanel');
+    panel.classList.toggle('open');
+}
+
+function loadTopic(idx) {
+    currentTopic = idx;
+    currentLevel = 0;
+    var area = document.getElementById('chatArea');
+    var topic = knowledge[idx];
+    area.innerHTML = '<div class="guide-msg-bot">' + topic.levels[0].replace(/\\n/g, '<br>') + '</div>' + getActionButtons();
+    area.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+}
+
+function getActionButtons() {
+    var topic = knowledge[currentTopic];
+    var simpler = currentLevel < topic.levels.length - 1
+        ? '<button class="guide-action-btn" onclick="goSimpler()">Still confused, explain differently</button>'
+        : '<span style="color:#10B981; font-size:11px; padding:8px 0; display:inline-block;">All explanation levels shown</span>';
+    var nextIdx = (currentTopic + 1) % knowledge.length;
+    return '<div style="margin-top:10px;">' + simpler + '<button class="guide-action-btn primary" onclick="loadTopic(' + nextIdx + ')">I understand, next topic ➜</button><button class="guide-action-btn" onclick="resetGuide()">Back to topics</button></div>';
+}
+
+function goSimpler() {
+    if (currentTopic < 0) return;
+    currentLevel++;
+    var topic = knowledge[currentTopic];
+    var area = document.getElementById('chatArea');
+    area.innerHTML += '<div class="guide-msg-user">Can you explain that differently?</div>';
+    area.innerHTML += '<div class="guide-msg-bot">' + topic.levels[currentLevel].replace(/\\n/g, '<br>') + '</div>';
+    area.innerHTML = area.innerHTML.replace(/<div style="margin-top:10px;">.*?<\\/div>$/s, '') + getActionButtons();
+    area.scrollTop = area.scrollHeight;
+}
+
+function resetGuide() {
+    currentTopic = -1;
+    currentLevel = 0;
+    document.getElementById('chatArea').innerHTML = '';
+    document.getElementById('guideBody').scrollTop = 0;
+}
+</script>
+""", unsafe_allow_html=True)
+
 st.markdown("""
 <div style="margin-top:60px; padding:20px 0; border-top:1px solid #1E293B;
             display:flex; justify-content:space-between; align-items:center;">
