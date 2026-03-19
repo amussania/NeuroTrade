@@ -8,6 +8,7 @@ import csv
 import os
 import time
 from supabase import create_client
+from neurotrade_chatbot import render_chatbot
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -3302,6 +3303,8 @@ def save_email(email: str) -> bool:
             w.writerow(["email", "timestamp"])
         w.writerow([email, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")])
     return True
+
+render_chatbot()
 
 st.markdown('<div class="section-header">Early Access</div>', unsafe_allow_html=True)
 
