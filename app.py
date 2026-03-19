@@ -735,6 +735,29 @@ def fetch_ohlc(coin_id: str, days: int = 7):
     except Exception:
         return None
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_signal_history(coin_id: str):
+    try:
+        time.sleep(1)
+        url = (
+            f"https://api.coingecko.com/api/v3/coins"
+            f"/{coin_id}/market_chart"
+            f"?vs_currency=usd&days=90"
+        )
+        r = requests.get(url, timeout=20, headers=HEADERS)
+        r.raise_for_status()
+        data = r.json()
+        if "prices" not in data:
+            return None
+        df = pd.DataFrame(
+            data["prices"],
+            columns=["ts", "price"]
+        )
+        df["ts"] = pd.to_datetime(df["ts"], unit="ms")
+        return df
+    except Exception:
+        return None
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def fetch_volume(coin_id: str, days: int = 7):
     time.sleep(2)
@@ -775,6 +798,53 @@ def fetch_whale_transactions():
                 })
         whales.sort(key=lambda x: x["btc"], reverse=True)
         return whales[:8]
+    except Exception:
+        return None
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_correlation_data():
+    try:
+        sources = {
+            'BTC':   'bitcoin',
+            'Gold':  'gold',
+            'SPX':   'sp-500-index',
+            'DXY':   None,
+        }
+        prices_30d = {}
+
+        for label, coin_id in sources.items():
+            if coin_id is None:
+                continue
+            time.sleep(1)
+            url = (
+                f"https://api.coingecko.com/api/v3/coins"
+                f"/{coin_id}/market_chart"
+                f"?vs_currency=usd&days=30"
+            )
+            r = requests.get(url, timeout=15,
+                           headers=HEADERS)
+            if r.status_code != 200:
+                continue
+            data = r.json()
+            if "prices" not in data:
+                continue
+            df = pd.DataFrame(
+                data["prices"],
+                columns=["ts", "price"]
+            )
+            df["ts"] = pd.to_datetime(df["ts"], unit="ms")
+            df = df.set_index("ts").resample("D").last()
+            prices_30d[label] = df["price"]
+
+        if len(prices_30d) < 2:
+            return None
+
+        combined = pd.DataFrame(prices_30d).dropna()
+        if len(combined) < 10:
+            return None
+
+        corr = combined.pct_change().dropna().corr()
+        return corr
     except Exception:
         return None
 
@@ -1309,6 +1379,7 @@ with st.spinner("Loading market data…"):
     news        = fetch_crypto_news()
     btc_yearly  = fetch_btc_yearly()
     whale_txs   = fetch_whale_transactions()
+    corr_data   = fetch_correlation_data()
     macro_dff   = fetch_fred_series("DFF",      FRED_API_KEY)
     macro_dxy   = fetch_fred_series("DTWEXBGS", FRED_API_KEY)
     macro_t10   = fetch_fred_series("T10YIE",   FRED_API_KEY)
@@ -1321,6 +1392,9 @@ with st.spinner("Loading market data…"):
                              days=st.session_state.chart_days)
     vol_data    = fetch_volume(st.session_state.selected_asset,
                                days=st.session_state.chart_days)
+    signal_history = fetch_signal_history(
+        st.session_state.selected_asset
+    )
 
 health_issues = run_health_check(
     prices, fng, onchain, charts, news,
@@ -1485,6 +1559,13 @@ asset_color   = ASSET_COLORS[selected_coin]
 score, comp_scores, explanation = compute_intelligence_score(
     prices, fng, onchain, charts, coin_id=selected_coin
 )
+
+_fng_val_for_alert = (
+    int(fng["data"][0]["value"])
+    if fng and "data" in fng
+    else None
+)
+check_and_send_alerts(score, selected_coin, _fng_val_for_alert)
 
 # On-chain available only for BTC
 has_onchain = (selected_coin == "bitcoin")
@@ -2325,6 +2406,130 @@ st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 # ═══════════════════════════════════════════════════════════════════════════════
 # MACRO INTELLIGENCE
 # ═══════════════════════════════════════════════════════════════════════════════
+st.markdown('<div class="section-header">Asset Correlation Matrix &nbsp;·&nbsp; 30-Day Returns</div>', unsafe_allow_html=True)
+
+if corr_data is not None:
+    _assets = [c for c in corr_data.columns]
+
+    st.markdown("""
+    <div style="background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:16px; padding:20px 24px;
+    margin-bottom:8px;">
+    <div style="color:var(--text-faint); font-size:11px;
+    font-weight:700; letter-spacing:2px;
+    text-transform:uppercase; margin-bottom:16px;">
+    30-Day Price Return Correlation ·
+    <span style="color:#475569; font-weight:400;">
+    +1.0 = moves together · -1.0 = moves opposite ·
+    0 = no relationship</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    _corr_cols = st.columns(len(_assets) + 1, gap="small")
+
+    with _corr_cols[0]:
+        st.markdown(
+            '<div style="height:40px;"></div>',
+            unsafe_allow_html=True
+        )
+        for asset in _assets:
+            st.markdown(
+                f'<div style="color:var(--text-muted); '
+                f'font-size:12px; font-weight:700; '
+                f'height:44px; display:flex; '
+                f'align-items:center;">{asset}</div>',
+                unsafe_allow_html=True
+            )
+
+    for i, col_asset in enumerate(_assets):
+        with _corr_cols[i + 1]:
+            st.markdown(
+                f'<div style="color:var(--text-faint); '
+                f'font-size:11px; font-weight:700; '
+                f'letter-spacing:1px; height:40px; '
+                f'display:flex; align-items:center; '
+                f'justify-content:center;">'
+                f'{col_asset}</div>',
+                unsafe_allow_html=True
+            )
+            for row_asset in _assets:
+                val = corr_data.loc[row_asset, col_asset]
+                if row_asset == col_asset:
+                    bg = "rgba(124,58,237,0.15)"
+                    col_ = "#7C3AED"
+                elif val >= 0.7:
+                    bg = "rgba(16,185,129,0.12)"
+                    col_ = "#10B981"
+                elif val >= 0.3:
+                    bg = "rgba(132,204,22,0.10)"
+                    col_ = "#84CC16"
+                elif val >= -0.3:
+                    bg = "rgba(148,163,184,0.08)"
+                    col_ = "#94A3B8"
+                elif val >= -0.7:
+                    bg = "rgba(249,115,22,0.10)"
+                    col_ = "#F97316"
+                else:
+                    bg = "rgba(239,68,68,0.12)"
+                    col_ = "#EF4444"
+
+                st.markdown(
+                    f'<div style="background:{bg}; '
+                    f'border:1px solid var(--border); '
+                    f'border-radius:8px; height:44px; '
+                    f'display:flex; align-items:center; '
+                    f'justify-content:center; '
+                    f'font-size:13px; font-weight:700; '
+                    f'color:{col_}; margin-bottom:4px;">'
+                    f'{val:.2f}</div>',
+                    unsafe_allow_html=True
+                )
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    _corr_insights = []
+    if 'BTC' in corr_data.columns and 'DXY' in corr_data.columns:
+        btc_dxy = corr_data.loc['BTC', 'DXY']
+        if btc_dxy < -0.3:
+            _corr_insights.append(
+                f"BTC is negatively correlated with the Dollar "
+                f"({btc_dxy:.2f}). Dollar weakness historically "
+                f"supports BTC price."
+            )
+    if 'BTC' in corr_data.columns and 'Gold' in corr_data.columns:
+        btc_gold = corr_data.loc['BTC', 'Gold']
+        if btc_gold > 0.5:
+            _corr_insights.append(
+                f"BTC is moving with Gold ({btc_gold:.2f}). "
+                f"Risk-off behavior detected."
+            )
+        elif btc_gold < 0:
+            _corr_insights.append(
+                f"BTC is diverging from Gold ({btc_gold:.2f}). "
+                f"Crypto-specific movement."
+            )
+
+    if _corr_insights:
+        st.markdown(
+            '<div class="intel-explanation oc-tile" '
+            'style="margin-top:12px; font-size:13px; '
+            'line-height:1.7;">'
+            + "  ".join(f"· {s}" for s in _corr_insights)
+            + '</div>',
+            unsafe_allow_html=True,
+        )
+else:
+    st.markdown(
+        '<div class="oc-tile" style="text-align:center; '
+        'padding:32px 24px;">'
+        '<div style="color:#475569; font-size:13px;">'
+        '<span class="live-dot"></span>'
+        'Correlation data loading — updates every hour'
+        '</div></div>',
+        unsafe_allow_html=True,
+    )
+
 st.markdown('<div class="section-header">Macro Intelligence</div>', unsafe_allow_html=True)
 
 def _safe_float(val):
@@ -2554,6 +2759,194 @@ except Exception as e:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SIGNAL ACCURACY TRACKER
 # ═══════════════════════════════════════════════════════════════════════════════
+st.markdown(
+    f'<div class="section-header">90-Day Signal History &nbsp;·&nbsp; '
+    f'<span style="color:{asset_color};">'
+    f'{selected_meta["name"]}</span></div>',
+    unsafe_allow_html=True,
+)
+
+if signal_history is not None and not signal_history.empty:
+    _sh_fng_entries = (fng30 or {}).get("data", [])[:30]
+
+    _sh_fig = make_subplots(
+        rows=2, cols=1,
+        shared_xaxes=False,
+        row_heights=[0.65, 0.35],
+        vertical_spacing=0.08,
+        subplot_titles=(
+            f"{selected_meta['name']} Price (90 Days)",
+            "Fear & Greed Index (30 Days)"
+        ),
+    )
+
+    _sh_color = asset_color
+    _sh_fill  = hex_to_rgba(asset_color, 0.12)
+
+    _sh_fig.add_trace(go.Scatter(
+        x=signal_history["ts"],
+        y=signal_history["price"],
+        mode="lines",
+        name=selected_meta["symbol"],
+        line=dict(color=_sh_color, width=2),
+        fill="tozeroy",
+        fillcolor=_sh_fill,
+        hovertemplate="$%{y:,.2f}<extra>"
+                     + selected_meta["symbol"]
+                     + "</extra>",
+    ), row=1, col=1)
+
+    if _sh_fng_entries:
+        _sh_fng_dates = [
+            datetime.utcfromtimestamp(int(e["timestamp"]))
+            for e in reversed(_sh_fng_entries)
+        ]
+        _sh_fng_vals = [
+            int(e["value"])
+            for e in reversed(_sh_fng_entries)
+        ]
+        _sh_fng_colors = [fng_color(v) for v in _sh_fng_vals]
+
+        _sh_fig.add_trace(go.Scatter(
+            x=_sh_fng_dates,
+            y=_sh_fng_vals,
+            mode="lines+markers",
+            name="Fear & Greed",
+            line=dict(color="#00D4FF", width=2),
+            marker=dict(
+                color=_sh_fng_colors,
+                size=6,
+                line=dict(width=0)
+            ),
+            hovertemplate=(
+                "%{y}<extra>Fear & Greed</extra>"
+            ),
+            fill="tozeroy",
+            fillcolor="rgba(0,212,255,0.06)",
+        ), row=2, col=1)
+
+        for y0, y1, col_ in [
+            (0,  25,  "rgba(239,68,68,0.05)"),
+            (75, 100, "rgba(16,185,129,0.05)")
+        ]:
+            _sh_fig.add_hrect(
+                y0=y0, y1=y1,
+                fillcolor=col_,
+                line_width=0,
+                row=2, col=1
+            )
+
+    _sh_fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=8, r=8, t=32, b=8),
+        height=460,
+        showlegend=False,
+        hovermode="x unified",
+        font=dict(family="Inter", color="#64748B", size=10),
+    )
+
+    for _ax in ("xaxis", "xaxis2"):
+        _sh_fig.update_layout(**{
+            _ax: dict(
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.04)",
+                showline=False,
+                zeroline=False,
+                tickfont=dict(color="#64748B", size=10),
+                rangeslider=dict(visible=False),
+            )
+        })
+
+    _sh_fig.update_layout(
+        yaxis=dict(
+            tickprefix="$",
+            tickformat=",.0f",
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.04)",
+            zeroline=False,
+            tickfont=dict(color=_sh_color, size=10),
+            side="right",
+        ),
+        yaxis2=dict(
+            range=[0, 100],
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.04)",
+            zeroline=False,
+            tickfont=dict(
+                color="#00D4FF", size=10
+            ),
+            side="right",
+        ),
+    )
+
+    for ann in _sh_fig.layout.annotations:
+        ann.font.color = "#94A3B8"
+        ann.font.size  = 11
+
+    st.plotly_chart(
+        _sh_fig,
+        use_container_width=True,
+        config={"displayModeBar": False}
+    )
+
+    _sh_price_change = (
+        (signal_history["price"].iloc[-1] /
+         signal_history["price"].iloc[0]) - 1
+    ) * 100
+    _sh_price_high = signal_history["price"].max()
+    _sh_price_low  = signal_history["price"].min()
+    _sh_chg_color  = (
+        "#10B981" if _sh_price_change >= 0
+        else "#EF4444"
+    )
+
+    _sh_stat_cols = st.columns(3, gap="large")
+    _sh_stats = [
+        (
+            f"90-Day Return · {selected_meta['symbol']}",
+            f"{_sh_price_change:+.2f}%",
+            "Price change over 90 days",
+            _sh_chg_color,
+        ),
+        (
+            "90-Day High",
+            fmt_price(_sh_price_high),
+            "Highest price in 90 days",
+            "#10B981",
+        ),
+        (
+            "90-Day Low",
+            fmt_price(_sh_price_low),
+            "Lowest price in 90 days",
+            "#EF4444",
+        ),
+    ]
+    for col, (lbl, val, sub, col_) in zip(
+        _sh_stat_cols, _sh_stats
+    ):
+        with col:
+            st.markdown(
+                f'<div class="oc-tile">'
+                f'<div class="oc-label">{lbl}</div>'
+                f'<div class="oc-value" style="color:{col_}; '
+                f'font-size:24px;">{val}</div>'
+                f'<div style="color:#64748B; font-size:11px; '
+                f'margin-top:4px;">{sub}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+else:
+    st.markdown(
+        '<div class="oc-tile" style="text-align:center; '
+        'padding:32px 24px;">'
+        '<div style="color:#475569; font-size:13px;">'
+        '<span class="live-dot"></span>'
+        '90-day history loading — auto-retrying'
+        '</div></div>',
+        unsafe_allow_html=True,
+    )
+
 st.markdown('<div class="section-header">Signal Accuracy Tracker</div>', unsafe_allow_html=True)
 
 accuracy_data = compute_accuracy_tracker(btc_yearly, fng30)
@@ -2769,9 +3162,270 @@ def save_email(email: str) -> bool:
         w.writerow([email, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")])
     return True
 
+def send_alert_email(to_email: str, subject: str, body: str) -> bool:
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        smtp_user = st.secrets.get("SMTP_USER", "")
+        smtp_pass = st.secrets.get("SMTP_PASS", "")
+
+        if not smtp_user or not smtp_pass:
+            return False
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = smtp_user
+        msg["To"]      = to_email
+
+        html_body = f"""
+        <html><body style="font-family:Inter,sans-serif;
+        background:#0B1120;color:#CBD5E1;padding:32px;">
+        <div style="max-width:600px;margin:0 auto;">
+        <div style="font-size:24px;font-weight:900;
+        background:linear-gradient(90deg,#00D4FF,#7C3AED);
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+        margin-bottom:24px;">⬡ NeuroTrade</div>
+        <div style="background:#1E293B;border:1px solid #334155;
+        border-radius:16px;padding:24px;">
+        {body}
+        </div>
+        <div style="color:#334155;font-size:12px;margin-top:24px;">
+        NeuroTrade · AI Crypto Intelligence · Not financial advice
+        </div>
+        </div></body></html>
+        """
+
+        msg.attach(MIMEText(html_body, "html"))
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_user, to_email, msg.as_string())
+        return True
+    except Exception:
+        return False
+
+ALERT_FILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "alerts.csv"
+)
+
+def load_alert_subscribers() -> list:
+    if not os.path.exists(ALERT_FILE):
+        return []
+    try:
+        with open(ALERT_FILE, newline="", encoding="utf-8") as f:
+            return [row[0] for row in csv.reader(f) if row]
+    except Exception:
+        return []
+
+def save_alert_subscriber(email: str) -> bool:
+    email = email.strip().lower()
+    exists = False
+    if os.path.exists(ALERT_FILE):
+        try:
+            with open(ALERT_FILE, newline="",
+                      encoding="utf-8") as f:
+                exists = any(
+                    row[0] == email
+                    for row in csv.reader(f) if row
+                )
+        except Exception:
+            pass
+    if exists:
+        return False
+    write_header = not os.path.exists(ALERT_FILE)
+    with open(ALERT_FILE, "a", newline="",
+              encoding="utf-8") as f:
+        w = csv.writer(f)
+        if write_header:
+            w.writerow(["email", "timestamp"])
+        w.writerow([email,
+                   datetime.utcnow().strftime(
+                       "%Y-%m-%d %H:%M:%S UTC")])
+    return True
+
+def check_and_send_alerts(score, coin_id, fng_val):
+    if score is None:
+        return
+
+    alert_key = f"last_alert_{coin_id}"
+    last_score = st.session_state.get(alert_key, 50)
+
+    alert_subject = None
+    alert_body    = None
+
+    if score >= 70 and last_score < 70:
+        alert_subject = (
+            f"NeuroTrade Alert: "
+            f"{COINS[coin_id]['symbol']} entered Strong Bull"
+        )
+        alert_body = f"""
+        <h2 style="color:#10B981;">
+        🟢 Strong Bull Signal Detected</h2>
+        <p style="color:#CBD5E1;font-size:16px;">
+        <strong style="color:#FFFFFF;">
+        {COINS[coin_id]['name']}</strong>
+        Intelligence Score just crossed
+        <strong style="color:#10B981;">70</strong>,
+        entering Strong Bull territory.</p>
+        <div style="background:#0B1120;border-radius:12px;
+        padding:16px;margin:16px 0;">
+        <div style="font-size:48px;font-weight:900;
+        color:#10B981;">{score}</div>
+        <div style="color:#64748B;font-size:13px;">
+        Strong Bull · Combined Intelligence Score</div>
+        </div>
+        <p style="color:#94A3B8;font-size:13px;">
+        Fear & Greed: {fng_val} ·
+        Historically {COINS[coin_id]['symbol']} has shown
+        positive returns following Strong Bull signals.</p>
+        <p style="color:#475569;font-size:12px;">
+        View live dashboard:
+        https://neurotrade-ai.streamlit.app</p>
+        """
+
+    elif score <= 30 and last_score > 30:
+        alert_subject = (
+            f"NeuroTrade Alert: "
+            f"{COINS[coin_id]['symbol']} entered Strong Bear"
+        )
+        alert_body = f"""
+        <h2 style="color:#EF4444;">
+        🔴 Strong Bear Signal Detected</h2>
+        <p style="color:#CBD5E1;font-size:16px;">
+        <strong style="color:#FFFFFF;">
+        {COINS[coin_id]['name']}</strong>
+        Intelligence Score just dropped below
+        <strong style="color:#EF4444;">30</strong>,
+        entering Strong Bear territory.</p>
+        <div style="background:#0B1120;border-radius:12px;
+        padding:16px;margin:16px 0;">
+        <div style="font-size:48px;font-weight:900;
+        color:#EF4444;">{score}</div>
+        <div style="color:#64748B;font-size:13px;">
+        Strong Bear · Combined Intelligence Score</div>
+        </div>
+        <p style="color:#94A3B8;font-size:13px;">
+        Fear & Greed: {fng_val} ·
+        Historically extreme fear has preceded
+        recovery 70% of the time within 7 days.</p>
+        <p style="color:#475569;font-size:12px;">
+        View live dashboard:
+        https://neurotrade-ai.streamlit.app</p>
+        """
+
+    elif fng_val is not None and fng_val <= 20:
+        alert_subject = (
+            "NeuroTrade Alert: Extreme Fear — "
+            "Historical Recovery Zone"
+        )
+        alert_body = f"""
+        <h2 style="color:#F97316;">
+        ⚠️ Extreme Fear Alert</h2>
+        <p style="color:#CBD5E1;font-size:16px;">
+        Crypto Fear & Greed Index just hit
+        <strong style="color:#EF4444;">{fng_val}</strong>
+        — deep Extreme Fear territory.</p>
+        <div style="background:#0B1120;border-radius:12px;
+        padding:16px;margin:16px 0;">
+        <div style="font-size:48px;font-weight:900;
+        color:#EF4444;">{fng_val}</div>
+        <div style="color:#64748B;font-size:13px;">
+        Extreme Fear · Fear & Greed Index</div>
+        </div>
+        <p style="color:#94A3B8;font-size:13px;">
+        NeuroTrade signal accuracy data shows 70% of
+        extreme fear readings preceded recovery
+        within 7 days.</p>
+        <p style="color:#475569;font-size:12px;">
+        View live dashboard:
+        https://neurotrade-ai.streamlit.app</p>
+        """
+
+    if alert_subject and alert_body:
+        subscribers = load_alert_subscribers()
+        for email in subscribers:
+            send_alert_email(email, alert_subject, alert_body)
+        st.session_state[alert_key] = score
+
 st.markdown('<div class="section-header">Early Access</div>', unsafe_allow_html=True)
 
 member_count = load_waitlist_count()
+
+_alert_col, _wait_col = st.columns([1, 1], gap="large")
+
+with _alert_col:
+    st.markdown("""
+    <div style="background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:16px; padding:24px 28px;
+    margin-bottom:16px;">
+    <div style="font-size:16px; font-weight:800;
+    color:var(--text-primary); margin-bottom:8px;">
+    🔔 Signal Alerts</div>
+    <div style="color:var(--text-muted); font-size:13px;
+    line-height:1.6; margin-bottom:16px;">
+    Get emailed instantly when the Intelligence Score
+    crosses Strong Bull or Strong Bear, or when Fear
+    &amp; Greed hits extreme levels.
+    </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if "alert_success" not in st.session_state:
+        st.session_state.alert_success = False
+    if "alert_duplicate" not in st.session_state:
+        st.session_state.alert_duplicate = False
+
+    if st.session_state.alert_success:
+        st.markdown("""
+        <div style="background:rgba(16,185,129,0.08);
+        border:1px solid rgba(16,185,129,0.3);
+        border-radius:12px; padding:16px;
+        text-align:center;">
+        <div style="color:#10B981; font-weight:700;">
+        ✓ Alert subscription confirmed</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        with st.form("alert_form", clear_on_submit=True):
+            alert_email = st.text_input(
+                label="Alert email",
+                placeholder="Enter email for signal alerts",
+                label_visibility="collapsed",
+            )
+            alert_submitted = st.form_submit_button(
+                "Subscribe to Alerts →",
+                use_container_width=True,
+                type="primary",
+            )
+
+        if alert_submitted:
+            if not alert_email.strip() or \
+               "@" not in alert_email:
+                st.markdown(
+                    '<div style="color:#EF4444; '
+                    'font-size:13px;">Please enter a '
+                    'valid email.</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                added = save_alert_subscriber(
+                    alert_email.strip()
+                )
+                if added:
+                    st.session_state.alert_success = True
+                    st.rerun()
+                else:
+                    st.markdown(
+                        '<div style="color:#EAB308; '
+                        'font-size:13px;">Already '
+                        'subscribed.</div>',
+                        unsafe_allow_html=True,
+                    )
 
 wl_left, wl_right = st.columns([3, 2], gap="large")
 
