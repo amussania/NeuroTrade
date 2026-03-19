@@ -805,16 +805,14 @@ def fetch_whale_transactions():
 def fetch_correlation_data():
     try:
         sources = {
-            'BTC':   'bitcoin',
-            'Gold':  'gold',
-            'SPX':   'sp-500-index',
-            'DXY':   None,
+            'BTC':  'bitcoin',
+            'ETH':  'ethereum',
+            'SOL':  'solana',
+            'BNB':  'binancecoin',
         }
         prices_30d = {}
 
         for label, coin_id in sources.items():
-            if coin_id is None:
-                continue
             time.sleep(1)
             url = (
                 f"https://api.coingecko.com/api/v3/coins"
@@ -2578,25 +2576,30 @@ if corr_data is not None:
     st.markdown('</div>', unsafe_allow_html=True)
 
     _corr_insights = []
-    if 'BTC' in corr_data.columns and 'DXY' in corr_data.columns:
-        btc_dxy = corr_data.loc['BTC', 'DXY']
-        if btc_dxy < -0.3:
+    if 'BTC' in corr_data.columns and 'ETH' in corr_data.columns:
+        btc_eth = corr_data.loc['BTC', 'ETH']
+        if btc_eth > 0.8:
             _corr_insights.append(
-                f"BTC is negatively correlated with the Dollar "
-                f"({btc_dxy:.2f}). Dollar weakness historically "
-                f"supports BTC price."
+                f"BTC and ETH are highly correlated "
+                f"({btc_eth:.2f}). Market moving together."
             )
-    if 'BTC' in corr_data.columns and 'Gold' in corr_data.columns:
-        btc_gold = corr_data.loc['BTC', 'Gold']
-        if btc_gold > 0.5:
+        elif btc_eth < 0.3:
             _corr_insights.append(
-                f"BTC is moving with Gold ({btc_gold:.2f}). "
-                f"Risk-off behavior detected."
+                f"BTC and ETH are diverging ({btc_eth:.2f}). "
+                f"ETH showing independent movement."
             )
-        elif btc_gold < 0:
+    if 'BTC' in corr_data.columns and 'SOL' in corr_data.columns:
+        btc_sol = corr_data.loc['BTC', 'SOL']
+        if btc_sol > 0.8:
             _corr_insights.append(
-                f"BTC is diverging from Gold ({btc_gold:.2f}). "
-                f"Crypto-specific movement."
+                f"SOL is tracking BTC closely "
+                f"({btc_sol:.2f}). High market correlation."
+            )
+        elif btc_sol < 0.3:
+            _corr_insights.append(
+                f"SOL is diverging from BTC "
+                f"({btc_sol:.2f}). "
+                f"SOL-specific momentum detected."
             )
 
     if _corr_insights:
@@ -2979,10 +2982,14 @@ if signal_history is not None and not signal_history.empty:
         config={"displayModeBar": False}
     )
 
-    _sh_price_change = (
-        (signal_history["price"].iloc[-1] /
-         signal_history["price"].iloc[0]) - 1
-    ) * 100
+    _sh_first_price = signal_history["price"].iloc[0]
+    _sh_last_price = signal_history["price"].iloc[-1]
+    if _sh_first_price and _sh_first_price > 0:
+        _sh_price_change = (
+            (_sh_last_price / _sh_first_price) - 1
+        ) * 100
+    else:
+        _sh_price_change = 0.0
     _sh_price_high = signal_history["price"].max()
     _sh_price_low  = signal_history["price"].min()
     _sh_chg_color  = (
