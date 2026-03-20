@@ -391,6 +391,17 @@ def render_chatbot():
     st.markdown('<div class="section-header">NeuroTrade AI Guide</div>', unsafe_allow_html=True)
 
     st.markdown('''
+<div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+    <a href="https://wa.me/919811699944" target="_blank"
+       style="background:#25D366; color:white; padding:10px 20px;
+              border-radius:24px; text-decoration:none; font-size:13px;
+              font-weight:600; display:inline-flex; align-items:center; gap:8px;">
+        💬 Chat with founder on WhatsApp
+    </a>
+</div>
+''', unsafe_allow_html=True)
+
+    st.markdown('''
     <div style="background:linear-gradient(135deg,rgba(0,212,255,0.06),rgba(124,58,237,0.06));
                 border:1px solid rgba(0,212,255,0.15); border-radius:16px;
                 padding:20px 24px; margin-bottom:20px;">

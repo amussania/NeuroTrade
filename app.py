@@ -3304,6 +3304,8 @@ def save_email(email: str) -> bool:
         w.writerow([email, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")])
     return True
 
+render_chatbot()
+
 st.markdown('<div class="section-header">Early Access</div>', unsafe_allow_html=True)
 
 member_count = load_waitlist_count()
@@ -3528,155 +3530,6 @@ with wl_right:
 # FOOTER
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
-<style>
-.float-btn-wrap { position:fixed; bottom:24px; right:24px; z-index:2147483647; display:flex; flex-direction:column; align-items:flex-end; gap:10px; pointer-events:all; }
-.brain-btn { width:58px; height:58px; border-radius:50%; background:linear-gradient(135deg,#00D4FF,#7C3AED); border:none; cursor:pointer; font-size:26px; box-shadow:0 4px 24px rgba(0,212,255,0.35); display:flex; align-items:center; justify-content:center; transition:transform 0.2s; }
-.brain-btn:hover { transform:scale(1.08); }
-.wa-btn { width:58px; height:58px; border-radius:50%; background:#25D366; border:none; cursor:pointer; font-size:26px; box-shadow:0 4px 24px rgba(37,211,102,0.35); display:flex; align-items:center; justify-content:center; text-decoration:none; transition:transform 0.2s; }
-.wa-btn:hover { transform:scale(1.08); }
-.guide-panel { position:fixed; bottom:100px; right:24px; width:380px; max-height:75vh; background:#0F172A; border:1px solid #1E293B; border-radius:20px; box-shadow:0 8px 48px rgba(0,0,0,0.6); z-index:2147483646; flex-direction:column; overflow:hidden; display:none; }
-.guide-header { background:linear-gradient(135deg,rgba(0,212,255,0.12),rgba(124,58,237,0.12)); padding:16px 20px; border-bottom:1px solid #1E293B; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
-.guide-body { overflow-y:auto; padding:16px 20px; flex:1; }
-.guide-topic-btn { background:#1E293B; border:1px solid #334155; border-radius:8px; padding:8px 12px; color:#94A3B8; font-size:12px; cursor:pointer; margin:4px; display:inline-block; }
-.guide-topic-btn:hover { border-color:#00D4FF; color:#00D4FF; }
-.guide-msg-bot { background:#1E293B; border-radius:12px 12px 12px 4px; padding:14px 16px; margin-bottom:10px; color:#CBD5E1; font-size:13px; line-height:1.8; }
-.guide-msg-user { background:rgba(0,212,255,0.08); border:1px solid #334155; border-radius:12px 12px 4px 12px; padding:10px 16px; margin-bottom:10px; color:#E2E8F0; font-size:13px; line-height:1.8; margin-left:20px; }
-.guide-action-btn { background:#1E293B; border:1px solid #334155; border-radius:8px; padding:8px 14px; color:#94A3B8; font-size:12px; cursor:pointer; margin-right:8px; margin-top:8px; }
-.guide-action-btn:hover { border-color:#00D4FF; color:#00D4FF; }
-.guide-action-btn.primary { border-color:#00D4FF; color:#00D4FF; }
-</style>
-
-<div class="float-btn-wrap">
-    <a href="https://wa.me/919811699944" target="_blank" class="wa-btn" title="Chat with founder">💬</a>
-    <button class="brain-btn" id="brainBtn" title="NeuroTrade AI Guide">🧠</button>
-</div>
-
-<div class="guide-panel" id="guidePanel">
-    <div class="guide-header">
-        <div>
-            <div style="color:#00D4FF; font-size:14px; font-weight:700;">🧠 NeuroTrade AI Guide</div>
-            <div style="color:#475569; font-size:11px; margin-top:2px;">Your personal crypto intelligence teacher</div>
-        </div>
-        <button id="closeBtn" style="background:none; border:1px solid #334155; border-radius:6px; color:#475569; padding:4px 10px; cursor:pointer; font-size:12px;">✕ Close</button>
-    </div>
-    <div class="guide-body" id="guideBody">
-        <div style="color:#64748B; font-size:12px; margin-bottom:14px; line-height:1.6;">Pick a topic to learn what it means, how to read it, and why it matters. Say you do not understand and I will explain it differently.</div>
-        <div id="topicGrid">
-            <span class="guide-topic-btn" id="t0">🧠 Intelligence Score</span>
-            <span class="guide-topic-btn" id="t1">😨 Fear & Greed</span>
-            <span class="guide-topic-btn" id="t2">⛓ On-Chain Data</span>
-            <span class="guide-topic-btn" id="t3">🐋 Whale Activity</span>
-            <span class="guide-topic-btn" id="t4">🌍 Macro Intelligence</span>
-            <span class="guide-topic-btn" id="t5">📈 Price Momentum</span>
-            <span class="guide-topic-btn" id="t6">🎯 Signal Accuracy</span>
-            <span class="guide-topic-btn" id="t7">📰 News Sentiment</span>
-            <span class="guide-topic-btn" id="t8">📊 Signal Intelligence</span>
-            <span class="guide-topic-btn" id="t9">⟠ ETH Gas Prices</span>
-            <span class="guide-topic-btn" id="t10">🔥 Trending Status</span>
-            <span class="guide-topic-btn" id="t11">🚀 How to use this</span>
-        </div>
-        <div id="chatArea" style="margin-top:12px;"></div>
-    </div>
-</div>
-
-<script>
-(function() {
-    function init() {
-        var btn = document.getElementById('brainBtn');
-        var panel = document.getElementById('guidePanel');
-        var closeBtn = document.getElementById('closeBtn');
-        if (!btn || !panel) { setTimeout(init, 500); return; }
-        btn.addEventListener('click', function() {
-            if (panel.style.display === 'flex') {
-                panel.style.display = 'none';
-            } else {
-                panel.style.display = 'flex';
-                panel.style.flexDirection = 'column';
-            }
-        });
-        closeBtn.addEventListener('click', function() {
-            panel.style.display = 'none';
-        });
-        for (var i = 0; i < 12; i++) {
-            (function(idx) {
-                var el = document.getElementById('t' + idx);
-                if (el) el.addEventListener('click', function() { loadTopic(idx); });
-            })(i);
-        }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        setTimeout(init, 300);
-    }
-})();
-
-var currentLevel = 0;
-var currentTopic = -1;
-
-var knowledge = [
-    { name: 'Intelligence Score', levels: ['The Combined Intelligence Score is a single number from 0 to 100 that tells you how bullish or bearish the market is right now.<br><br>0-30: Strong Bear. Serious weakness.<br>31-45: Weak Bear. More negative signals.<br>46-55: Neutral. Mixed signals.<br>56-70: Weak Bull. More positive signals.<br>71-100: Strong Bull. Serious strength.<br><br>It combines four signals: Fear and Greed at 30%, 24h momentum at 25%, 7 day trend at 25%, on-chain volume at 20%.<br><br>Did that make sense?', 'Think of it like a weather forecast for crypto.<br><br>A score of 75 is a sunny forecast. A score of 20 is a storm warning.<br><br>It asks four data sources for their view and combines them into one number. Simple as that.<br><br>Is that clearer?', 'Imagine asking four friends for their opinion before making a decision. Each checks something different. The score combines all four views.<br><br>High means mostly positive. Low means mostly negative.<br><br>Not financial advice.'] },
-    { name: 'Fear & Greed', levels: ['The Fear and Greed Index measures crypto market emotion from 0 to 100.<br><br>0-25: Extreme Fear. People are panicking.<br>26-45: Fear. Market is nervous.<br>46-55: Neutral.<br>56-75: Greed. People are excited.<br>76-100: Extreme Greed. FOMO taking over.<br><br>Extreme fear has historically been a buying opportunity. Extreme greed has historically preceded corrections.<br><br>Did that make sense?', 'Think of it like the mood of a crowd at a market.<br><br>When everyone is panicking things are often on sale. When everyone is rushing in excitedly things are often overpriced.<br><br>The smart move is often opposite to the crowd.<br><br>Want me to go even simpler?', 'Imagine a fruit market. When it rains nobody comes and prices drop. That is extreme fear.<br><br>When sun shines everyone wants fruit and prices go up. That is extreme greed.<br><br>Not financial advice.'] },
-    { name: 'On-Chain Data', levels: ['On-chain data is information recorded directly on the Bitcoin blockchain showing real network activity.<br><br>Hash Rate: Computing power securing Bitcoin.<br>Daily Transactions: How many transfers today.<br>Block Time: How fast new blocks are created.<br>Network Health: High, Medium or Low.<br><br>You can fake a price pump. You cannot fake real network activity.<br><br>Did that make sense?', 'Think of Bitcoin like a city. On-chain data is the activity report.<br><br>How many cars on the roads. How busy the shops are.<br><br>A bustling city is healthy regardless of what estate agents say about prices.<br><br>Want me to go simpler?', 'Want to know if a restaurant is popular or just has good marketing?<br><br>You could read their Instagram. Or stand outside and count real customers.<br><br>On-chain data is counting the real customers. Nobody can fake it.<br><br>Not financial advice.'] },
-    { name: 'Whale Activity', levels: ['Whales are wallets holding very large Bitcoin amounts. When they move it can significantly impact markets.<br><br>NeuroTrade tracks unconfirmed BTC transactions over 10 BTC in the mempool before blockchain confirmation.<br><br>When whales move to exchanges it can signal selling. Off exchanges signals long term holding.<br><br>Did that make sense?', 'Think of whales like big supermarkets. When they sell off huge stock it affects prices for everyone.<br><br>NeuroTrade shows these movements in real time before they are even confirmed.<br><br>Want me to go simpler?', 'Imagine a wealthy person walks into an auction. Everyone watches them.<br><br>If they buy, prices go up. If they sell, everyone gets nervous.<br><br>Whales are those wealthy people in crypto.<br><br>Not financial advice.'] },
-    { name: 'Macro Intelligence', levels: ['Macro Intelligence tracks four US Federal Reserve indicators that influence crypto.<br><br>Fed Funds Rate: High rates make investors avoid risky assets like crypto.<br>US Dollar Index: Strong dollar is bearish for crypto. Weak dollar is bullish.<br>Inflation Expectations: High inflation can drive investors toward crypto.<br>Unemployment: Measures economic health.<br><br>Did that make sense?', 'When a bank offers 5% on savings for zero risk, why invest in volatile crypto?<br><br>When savings pay almost nothing you look for better returns. That is when crypto becomes attractive.<br><br>The Fed controls those rates. Rates up, crypto struggles. Rates down, crypto benefits.<br><br>Want me to go simpler?', 'Think of the economy as a water system. The Fed controls the tap.<br><br>Tighten the tap and risky investments like crypto dry up.<br><br>Open the tap and money flows. Some finds crypto.<br><br>Not financial advice.'] },
-    { name: 'Price Momentum', levels: ['Price momentum measures how fast and in which direction an asset is moving.<br><br>24h Momentum: Price change in last 24 hours.<br>7 Day Trend: Price change over the last week. Filters noise and shows broader direction.<br><br>Together they account for 50% of the Intelligence Score.<br><br>Did that make sense?', 'Think of momentum like a ball rolling down a hill.<br><br>24h momentum is how fast it is moving. 7 day trend is which direction the hill slopes.<br><br>When both point the same way the signal is strong.<br><br>Want me to go simpler?', 'Imagine watching a train. The 24h momentum is how fast it moves. The 7 day trend is which direction the tracks point.<br><br>You want both pointing the same way before drawing conclusions.<br><br>Not financial advice.'] },
-    { name: 'Signal Accuracy', levels: ['The Signal Accuracy Tracker measures how often contrarian signals have been correct over 30 days.<br><br>Fear Reversal: When Fear and Greed hits Extreme Fear below 30. Price historically rises within 7 days.<br>Greed Reversal: When it hits Extreme Greed above 70. Price historically falls within 7 days.<br><br>Currently showing 61-65% win rate. Anything above 55% is considered valuable.<br><br>Did that make sense?', 'Think of it like a weather forecaster track record.<br><br>If they predicted rain 10 times and it rained 6 times that is 60% accuracy. Pretty good for complex systems.<br><br>61-65% means right more often than wrong. Over many decisions that adds up significantly.<br><br>Want me to go simpler?', 'Imagine a coin that lands heads 62% of the time instead of 50%.<br><br>Over 100 flips that makes a massive difference even though each flip feels uncertain.<br><br>That is what 62% signal accuracy means.<br><br>Not financial advice.'] },
-    { name: 'News Sentiment', levels: ['NeuroTrade pulls live headlines every 30 minutes and classifies each as Bullish, Bearish or Neutral automatically.<br><br>Bullish keywords: surge, rally, gain, record, adoption.<br>Bearish keywords: crash, drop, fall, hack, ban, warning.<br><br>A single major story can move crypto prices 10-20% within hours. Seeing the overall tone at a glance is powerful.<br><br>Did that make sense?', 'Think of news sentiment like checking the mood of a crowd before walking into a room.<br><br>Excited chatter means positive mood. Worried voices mean something is wrong.<br><br>NeuroTrade reads the headlines so you do not have to.<br><br>Want me to go simpler?', 'Imagine crypto Twitter is a giant conversation.<br><br>News sentiment is like having someone stand in the middle and tell you whether people sound excited or worried overall.<br><br>Not financial advice.'] },
-    { name: 'Signal Intelligence', levels: ['Signal Intelligence gives you a 30 day overview of sentiment patterns.<br><br>Extreme Fear Days: How many days had Fear and Greed below 25.<br>30 Day Average: Overall sentiment score for the month.<br>Sentiment Trend: Whether today is better or worse than the average.<br>Consecutive Days in Zone: How long the market has been in the current mood.<br><br>Did that make sense?', 'Think of it like a monthly weather summary.<br><br>Instead of just today you see how many stormy days there were, the average, and whether it is getting better or worse.<br><br>Want me to go simpler?', 'Imagine checking if summer is coming. You look at the last 30 days. How many cold days? Is it getting warmer overall?<br><br>Signal Intelligence does the same for market mood.<br><br>Not financial advice.'] },
-    { name: 'ETH Gas Prices', levels: ['Gas prices are fees paid to process transactions on Ethereum, measured in Gwei.<br><br>Safe: Cheapest, slower.<br>Standard: Balanced speed and cost.<br>Fast: Most expensive, almost instant.<br><br>High gas prices mean the network is very busy. High demand is generally positive for ETH.<br><br>Did that make sense?', 'Think of gas prices like toll roads during rush hour.<br><br>High traffic means higher toll. Late at night the toll is cheap.<br><br>High ETH gas prices mean rush hour on the network.<br><br>Want me to go simpler?', 'Imagine a busy restaurant on Saturday night. Long queue. You pay more for a table.<br><br>That is high gas prices. The network is packed and people pay extra to jump the queue.<br><br>Not financial advice.'] },
-    { name: 'Trending Status', levels: ['Trending status shows whether the asset is in the top 7 most searched coins on CoinGecko right now.<br><br>When trending it means retail attention is rapidly increasing. More searches, more potential buyers.<br><br>Retail attention often precedes price movements.<br><br>Did that make sense?', 'Think of it like watching what is popular on Netflix.<br><br>When a show trends lots of people are suddenly watching. In crypto when a coin trends lots of people are suddenly searching for it.<br><br>More attention often means more buyers coming.<br><br>Want me to go simpler?', 'Imagine noticing a long queue outside a shop you never paid attention to before.<br><br>That queue tells you something interesting is happening inside even before you know what it is.<br><br>Not financial advice.'] },
-    { name: 'How to use this', levels: ['Here is how to use NeuroTrade:<br><br>1. Check the Intelligence Score for your asset.<br>2. Look at the Signal Breakdown. Are signals aligned?<br>3. Check Fear and Greed. Is the market in extreme territory?<br>4. Read Macro Intelligence. Are rates and the dollar helping or hurting?<br>5. Scan News Sentiment. Is the news cycle positive or negative?<br>6. Check Whale Activity. Are large holders moving?<br>7. Look at Signal Accuracy. How reliable are signals historically?<br><br>Never rely on one signal alone.<br><br>Did that make sense?', 'Think of NeuroTrade like a doctor consultation.<br><br>A good doctor checks blood pressure, history, and symptoms together.<br><br>Each section is one vital sign. The Intelligence Score is the overall diagnosis.<br><br>Want me to walk through a specific example?', 'Imagine deciding whether to take an umbrella.<br><br>You check the forecast, look outside, check if friends have umbrellas, look at the sky.<br><br>When all signals agree you can be confident. That is how to use NeuroTrade.<br><br>Not financial advice.'] }
-];
-
-function loadTopic(idx) {
-    currentTopic = idx;
-    currentLevel = 0;
-    var area = document.getElementById('chatArea');
-    area.innerHTML = '<div class="guide-msg-bot">' + knowledge[idx].levels[0] + '</div>' + getActionButtons();
-    document.getElementById('guideBody').scrollTop = document.getElementById('guideBody').scrollHeight;
-}
-
-function getActionButtons() {
-    var topic = knowledge[currentTopic];
-    var simpler = currentLevel < topic.levels.length - 1
-        ? '<button class="guide-action-btn" id="simplerBtn">Still confused, explain differently</button>'
-        : '<span style="color:#10B981; font-size:11px; padding:8px 0; display:inline-block;">All explanation levels shown</span>';
-    var nextIdx = (currentTopic + 1) % knowledge.length;
-    return '<div id="actionBtns" style="margin-top:10px;">' + simpler + '<button class="guide-action-btn primary" id="nextBtn" data-next="' + nextIdx + '">I understand, next topic \u279c</button><button class="guide-action-btn" id="backBtn">Back to topics</button></div>';
-}
-
-function bindActionButtons() {
-    var s = document.getElementById('simplerBtn');
-    var n = document.getElementById('nextBtn');
-    var b = document.getElementById('backBtn');
-    if (s) s.addEventListener('click', goSimpler);
-    if (n) n.addEventListener('click', function() { loadTopic(parseInt(this.getAttribute('data-next'))); bindActionButtons(); });
-    if (b) b.addEventListener('click', function() { document.getElementById('chatArea').innerHTML = ''; document.getElementById('guideBody').scrollTop = 0; });
-}
-
-function goSimpler() {
-    if (currentTopic < 0) return;
-    currentLevel++;
-    var topic = knowledge[currentTopic];
-    var area = document.getElementById('chatArea');
-    var oldBtns = document.getElementById('actionBtns');
-    if (oldBtns) oldBtns.remove();
-    area.innerHTML += '<div class="guide-msg-user">Can you explain that differently?</div>';
-    area.innerHTML += '<div class="guide-msg-bot">' + topic.levels[currentLevel] + '</div>' + getActionButtons();
-    bindActionButtons();
-    document.getElementById('guideBody').scrollTop = document.getElementById('guideBody').scrollHeight;
-}
-
-document.addEventListener('click', function(e) {
-    if (e.target && e.target.id === 'simplerBtn') goSimpler();
-    if (e.target && e.target.id === 'backBtn') { document.getElementById('chatArea').innerHTML = ''; }
-    if (e.target && e.target.id === 'nextBtn') { loadTopic(parseInt(e.target.getAttribute('data-next'))); }
-});
-</script>
-""", unsafe_allow_html=True)
-
-st.markdown("""
 <div style="margin-top:60px; padding:20px 0; border-top:1px solid #1E293B;
             display:flex; justify-content:space-between; align-items:center;">
     <span style="color:#334155; font-size:12px;">
@@ -3688,3 +3541,4 @@ st.markdown("""
     </span>
 </div>
 """, unsafe_allow_html=True)
+
