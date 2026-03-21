@@ -8,7 +8,6 @@ import csv
 import os
 import time
 from supabase import create_client
-from neurotrade_chatbot import render_chatbot
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -1527,29 +1526,6 @@ with st.spinner("Loading market data…"):
     signal_history = fetch_signal_history(
         st.session_state.selected_asset
     )
-
-st.markdown('---')
-st.markdown('**Data Diagnostic**')
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.write('prices:', 'OK' if prices else 'FAILED')
-    st.write('fng:', 'OK' if fng else 'FAILED')
-    st.write('onchain:', 'OK' if onchain else 'FAILED')
-    st.write('news:', 'OK' if news else 'FAILED')
-with col2:
-    st.write('btc_yearly:', 'OK' if btc_yearly is not None else 'FAILED')
-    st.write('whale_txs:', 'OK' if whale_txs is not None else 'FAILED')
-    st.write('trending:', 'OK' if trending else 'FAILED')
-    st.write('fng30:', 'OK' if fng30 else 'FAILED')
-with col3:
-    st.write('macro_dff:', 'OK' if macro_dff else 'FAILED')
-    st.write('macro_dxy:', 'OK' if macro_dxy else 'FAILED')
-    st.write('macro_t10:', 'OK' if macro_t10 else 'FAILED')
-    st.write('macro_unem:', 'OK' if macro_unem else 'FAILED')
-with col4:
-    st.write('eth_onchain:', 'OK' if eth_onchain else 'FAILED')
-    st.write('charts:', 'OK' if charts and charts.get(st.session_state.selected_asset) is not None else 'FAILED')
-st.markdown('---')
 
 health_issues = run_health_check(
     prices, fng, onchain, charts, news,
@@ -3327,8 +3303,6 @@ def save_email(email: str) -> bool:
         w.writerow([email, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")])
     return True
 
-render_chatbot()
-
 st.markdown('<div class="section-header">Early Access</div>', unsafe_allow_html=True)
 
 member_count = load_waitlist_count()
@@ -3564,4 +3538,3 @@ st.markdown("""
     </span>
 </div>
 """, unsafe_allow_html=True)
-
