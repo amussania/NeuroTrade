@@ -1528,6 +1528,29 @@ with st.spinner("Loading market data…"):
         st.session_state.selected_asset
     )
 
+st.markdown('---')
+st.markdown('**Data Diagnostic**')
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.write('prices:', 'OK' if prices else 'FAILED')
+    st.write('fng:', 'OK' if fng else 'FAILED')
+    st.write('onchain:', 'OK' if onchain else 'FAILED')
+    st.write('news:', 'OK' if news else 'FAILED')
+with col2:
+    st.write('btc_yearly:', 'OK' if btc_yearly is not None else 'FAILED')
+    st.write('whale_txs:', 'OK' if whale_txs is not None else 'FAILED')
+    st.write('trending:', 'OK' if trending else 'FAILED')
+    st.write('fng30:', 'OK' if fng30 else 'FAILED')
+with col3:
+    st.write('macro_dff:', 'OK' if macro_dff else 'FAILED')
+    st.write('macro_dxy:', 'OK' if macro_dxy else 'FAILED')
+    st.write('macro_t10:', 'OK' if macro_t10 else 'FAILED')
+    st.write('macro_unem:', 'OK' if macro_unem else 'FAILED')
+with col4:
+    st.write('eth_onchain:', 'OK' if eth_onchain else 'FAILED')
+    st.write('charts:', 'OK' if charts and charts.get(st.session_state.selected_asset) is not None else 'FAILED')
+st.markdown('---')
+
 health_issues = run_health_check(
     prices, fng, onchain, charts, news,
     macro_dff, macro_dxy,
