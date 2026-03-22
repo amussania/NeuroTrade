@@ -736,7 +736,7 @@ def fetch_fred_series(series_id: str, api_key: str):
     except Exception:
         return None
 
-@st.cache_data(ttl=7200, show_spinner=False)
+@st.cache_data(ttl=14400, show_spinner=False)
 def fetch_btc_yearly():
     for days in [365, 180, 90]:
         try:
@@ -905,7 +905,7 @@ def fetch_crypto_news(query="crypto OR bitcoin OR ethereum"):
     except Exception:
         return None
 
-@st.cache_data(ttl=1800, show_spinner=False)
+@st.cache_data(ttl=3600, show_spinner=False)
 def fetch_chart(coin_id: str):
     # Free CoinGecko tier: days=7 auto-returns hourly data; no interval param needed
     # 2-second delay per call to respect the free-tier rate limit (30 req/min).
@@ -1515,7 +1515,12 @@ with st.spinner("Loading market data…"):
     macro_dxy   = fetch_fred_series("DTWEXBGS", FRED_API_KEY)
     macro_t10   = fetch_fred_series("T10YIE",   FRED_API_KEY)
     macro_unem  = fetch_fred_series("UNRATE",   FRED_API_KEY)
-    charts      = {st.session_state.selected_asset: fetch_chart(st.session_state.selected_asset)}
+    _chart_result = fetch_chart(st.session_state.selected_asset)
+    if _chart_result is None:
+        time.sleep(2)
+        fetch_chart.clear()
+        _chart_result = fetch_chart(st.session_state.selected_asset)
+    charts      = {st.session_state.selected_asset: _chart_result}
     if 'chart_days' not in st.session_state:
         st.session_state.chart_days = 7
 
@@ -1877,6 +1882,14 @@ if prices and selected_coin in prices:
     if _spark:
         st.plotly_chart(_spark, use_container_width=True,
                         config={"displayModeBar": False})
+    else:
+        st.markdown(
+            '<div class="oc-tile" style="text-align:center; padding:24px;">'
+            '<div style="color:#475569; font-size:13px;">'
+            'Chart data loading. If this section stays blank, please wait 5 minutes and refresh the page.'
+            '</div></div>',
+            unsafe_allow_html=True,
+        )
 
     # ═══════════════════════════════════════════════════════════════════════════════
     # PRICE CHART — TRADING TERMINAL
@@ -2876,17 +2889,11 @@ try:
             )
 
 except Exception as e:
-    if btc_yearly is None:
-        _fallback_msg = "BTC price history loading — auto-retrying"
-    elif not _bt_fng_entries:
-        _fallback_msg = "Fear & Greed history loading — auto-retrying"
-    else:
-        _fallback_msg = "Chart rendering — refresh in 30 seconds"
     st.markdown(
-        f'<div class="oc-tile" style="text-align:center; padding:32px 24px;">'
-        f'<div style="color:#475569; font-size:13px;">'
-        f'<span class="live-dot"></span>{_fallback_msg}</div>'
-        f'</div>',
+        '<div class="oc-tile" style="text-align:center; padding:32px 24px;">'
+        '<div style="color:#475569; font-size:13px;">'
+        'Chart data loading. If this section stays blank, please wait 5 minutes and refresh the page.'
+        '</div></div>',
         unsafe_allow_html=True,
     )
 
