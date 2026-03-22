@@ -2787,9 +2787,9 @@ try:
     _fng_values = [int(e["value"]) for e in reversed(_bt_fng_entries)]
     _fng_colors = [fng_color(v) for v in _fng_values]
 
-    # Use yearly data if available, else fall back to the 7-day selected chart
+    # Use yearly data if available, else fall back to the 7-day BTC chart (cached)
     _price_df = btc_yearly if (btc_yearly is not None and not btc_yearly.empty) \
-                else charts.get("bitcoin") or charts.get(selected_coin)
+                else charts.get("bitcoin") or charts.get(selected_coin) or fetch_chart("bitcoin")
 
     # ── Two stacked subplots (independent x-axes) ────────────────────────────
     _bt_fig = make_subplots(
