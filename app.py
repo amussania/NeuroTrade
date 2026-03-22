@@ -11,7 +11,7 @@ from supabase import create_client
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="NeuroTrade · AI Crypto Intelligence",
+    page_title="NeuroTrade AI · Know Before The Market Moves",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -1557,11 +1557,11 @@ with col_logo:
                      background:linear-gradient(90deg,#00D4FF 0%,#7C3AED 100%);
                      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
                      letter-spacing:-1px; line-height:1;">
-            ⬡ NeuroTrade
+            ⬡ NeuroTrade AI
         </span>
         <span style="color:#334155; font-size:14px; font-weight:500;
                      border-left:1px solid #1E293B; padding-left:16px;">
-            AI Crypto Intelligence Platform
+            Know Before The Market Moves
         </span>
     </div>
     """, unsafe_allow_html=True)
@@ -3391,9 +3391,9 @@ wl_left, wl_right = st.columns([3, 2], gap="large")
 with wl_left:
     st.markdown("""
     <div class="waitlist-card">
-        <div class="waitlist-headline">Get Early Access<br>to NeuroTrade</div>
+        <div class="waitlist-headline">Get Early Access<br>to NeuroTrade AI</div>
         <div class="waitlist-sub">
-            Join the waitlist and lock in founder pricing at
+            Join NeuroTrade AI and lock in founder pricing at
             <strong style="color:inherit;">$79&thinsp;/&thinsp;month</strong>
             for your first year. Regular price will be $99&thinsp;/&thinsp;month.
             Limited founding member spots available.
@@ -3541,7 +3541,7 @@ st.markdown("""
         Blockchain.com &nbsp;·&nbsp; Auto-refresh every 5 min
     </span>
     <span style="color:#334155; font-size:12px;">
-        NeuroTrade © 2026 &nbsp;·&nbsp; For informational purposes only
+        NeuroTrade AI © 2026 &nbsp;·&nbsp; For informational purposes only
     </span>
 </div>
 """, unsafe_allow_html=True)
