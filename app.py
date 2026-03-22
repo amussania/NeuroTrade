@@ -736,9 +736,9 @@ def fetch_fred_series(series_id: str, api_key: str):
     except Exception:
         return None
 
-@st.cache_data(ttl=14400, show_spinner=False)
+@st.cache_data(ttl=7200, show_spinner=False)
 def fetch_btc_yearly():
-    for days in [365, 180, 90]:
+    for days in [90]:
         try:
             time.sleep(1)
             url = (
