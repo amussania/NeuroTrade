@@ -168,18 +168,17 @@ def render_chatbot():
     st.progress(done / total, text=f"{done} of {total} topics completed")
     st.write("")
 
-    # Topic selection grid
-    st.write("**Choose a topic to learn:**")
-    cols = st.columns(4)
-    for i, item in enumerate(KNOWLEDGE_BASE):
-        label = ("✅ " if item['name'] in st.session_state.completed_topics else "") + item['name']
-        with cols[i % 4]:
-            if st.button(label, key=f"cb_topic_{i}", use_container_width=True):
-                st.session_state.cb_topic_idx = i
-                st.session_state.cb_level = 0
-                st.session_state.cb_show_quiz = False
-                st.session_state.cb_quiz_result = None
-                st.rerun()
+    # Topic selection dropdown
+    topic_names = ['Select a topic to learn...'] + [t['name'] for t in KNOWLEDGE_BASE]
+    selected = st.selectbox('Choose a topic', topic_names, key='topic_selector', label_visibility='collapsed')
+    if selected != 'Select a topic to learn...':
+        new_idx = topic_names.index(selected) - 1
+        if st.session_state.cb_topic_idx != new_idx:
+            st.session_state.cb_topic_idx = new_idx
+            st.session_state.cb_level = 0
+            st.session_state.cb_show_quiz = False
+            st.session_state.cb_quiz_result = None
+            st.rerun()
 
     st.divider()
 
