@@ -488,7 +488,7 @@ div[data-testid="stForm"] {
 # ── only when TTLs expire (600 s), so the frequent reruns are lightweight.
 try:
     from streamlit_autorefresh import st_autorefresh
-    st_autorefresh(interval=1000, key="neurotrade_tick")
+    st_autorefresh(interval=30000, key="neurotrade_tick")
 except ImportError:
     pass
 
@@ -1569,11 +1569,12 @@ with col_logo:
 
 with col_ts:
     now      = datetime.utcnow().strftime("%H:%M:%S UTC")
-    elapsed  = int(time.time()) % 300
-    remaining = 300 - elapsed
-    mins     = remaining // 60
-    secs     = remaining % 60
-    timer_color = "#10B981" if remaining <= 30 else "#475569"
+    refresh_cycle = 300
+    elapsed = int(time.time()) % refresh_cycle
+    remaining = refresh_cycle - elapsed
+    mins = remaining // 60
+    secs = remaining % 60
+    timer_color = '#10B981' if remaining <= 60 else '#475569'
 
     hdr_c1, hdr_c2 = st.columns([2, 1])
     with hdr_c1:
