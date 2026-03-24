@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
+from neurotrade_chatbot import render_chatbot
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime
@@ -3309,6 +3310,8 @@ def save_email(email: str) -> bool:
             w.writerow(["email", "timestamp"])
         w.writerow([email, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")])
     return True
+
+render_chatbot()
 
 st.markdown('<div class="section-header">Early Access</div>', unsafe_allow_html=True)
 
