@@ -658,7 +658,7 @@ def fetch_prices():
             time.sleep(5)
     return None
 
-@st.cache_data(ttl=600, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
 def fetch_fear_greed():
     try:
         r = requests.get("https://api.alternative.me/fng/?limit=8", timeout=10)
@@ -667,7 +667,7 @@ def fetch_fear_greed():
     except Exception:
         return None
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=1800, show_spinner=False)
 def fetch_fng_history_30():
     try:
         r = requests.get("https://api.alternative.me/fng/?limit=30", timeout=10)
