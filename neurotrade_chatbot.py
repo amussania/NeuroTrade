@@ -195,26 +195,44 @@ def render_chatbot():
     st.info(item['levels'][level])
 
     if not st.session_state.cb_show_quiz:
-        col1, col2, col3 = st.columns([2, 2, 1])
+        st.markdown('<div style="height:12px;"></div>', unsafe_allow_html=True)
 
-        with col1:
-            if level < len(item['levels']) - 1:
-                if st.button("Still confused — explain differently", key="cb_simpler", use_container_width=True):
-                    st.session_state.cb_level += 1
-                    st.rerun()
-            else:
-                st.caption("You have seen all explanation levels.")
+        idx = st.session_state.cb_topic_idx
+        nav_options = []
+        if level < len(item['levels']) - 1:
+            nav_options.append('Explain differently')
+        nav_options.append('Take the quiz')
+        next_idx = (idx + 1) % len(KNOWLEDGE_BASE)
+        next_name = KNOWLEDGE_BASE[next_idx]['name']
+        nav_options.append(f'Next topic: {next_name}')
+        nav_options.append('Back to topics')
 
-        with col2:
-            if st.button("Got it — take the quiz", key="cb_quiz_btn", use_container_width=True):
-                st.session_state.cb_show_quiz = True
-                st.session_state.cb_quiz_result = None
-                st.rerun()
+        nav_choice = st.radio(
+            'What would you like to do?',
+            nav_options,
+            key=f'nav_{idx}_{level}',
+            horizontal=True,
+            index=None,
+            label_visibility='collapsed'
+        )
 
-        with col3:
-            if st.button("Back", key="cb_back", use_container_width=True):
-                st.session_state.cb_topic_idx = None
-                st.rerun()
+        if nav_choice == 'Explain differently':
+            st.session_state.cb_level += 1
+            st.rerun()
+        elif nav_choice == 'Take the quiz':
+            st.session_state.cb_show_quiz = True
+            st.session_state.cb_quiz_result = None
+            st.rerun()
+        elif nav_choice and nav_choice.startswith('Next topic'):
+            st.session_state.cb_topic_idx = next_idx
+            st.session_state.cb_level = 0
+            st.session_state.cb_show_quiz = False
+            st.session_state.cb_quiz_result = None
+            st.rerun()
+        elif nav_choice == 'Back to topics':
+            st.session_state.cb_topic_idx = None
+            st.session_state.cb_level = 0
+            st.rerun()
 
     else:
         # Quiz
