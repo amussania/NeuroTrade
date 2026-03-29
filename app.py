@@ -3653,6 +3653,9 @@ with wl_right:
         </div>
         """, unsafe_allow_html=True)
 
+    if st.session_state.get('supabase_error'):
+        st.write(f"Debug: {st.session_state['supabase_error']}")
+
     # Counter — always visible
     fresh_count = load_waitlist_count()
     st.markdown(f"""
