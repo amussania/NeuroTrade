@@ -761,9 +761,9 @@ def fetch_btc_yearly():
             time.sleep(5)
     return None
 
-@st.cache_data(ttl=1800, show_spinner=False)
+@st.cache_data(ttl=3600, show_spinner=False)
 def fetch_ohlc(coin_id: str, days: int = 7):
-    time.sleep(2)
+    time.sleep(3)
     url = (
         f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc"
         f"?vs_currency=usd&days={days}"
@@ -1960,16 +1960,24 @@ div[data-testid="stHorizontalBlock"] button {{
             }
         )
     else:
-        st.markdown(
-            f'<div class="oc-tile" style="height:480px; display:flex; '
-            f'flex-direction:column; align-items:center; justify-content:center; gap:10px;">'
-            f'<div style="font-size:32px;">📡</div>'
-            f'<div style="color:#475569; font-size:14px; font-weight:600;">'
-            f'{selected_meta["name"]} chart loading</div>'
-            f'<div style="color:#334155; font-size:12px;">Refreshes in 5 min</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+        _fallback_fig = make_price_chart(charts.get(selected_coin), selected_meta)
+        if _fallback_fig:
+            st.plotly_chart(
+                _fallback_fig,
+                use_container_width=True,
+                config={"displayModeBar": False, "displaylogo": False},
+            )
+        else:
+            st.markdown(
+                f'<div class="oc-tile" style="height:480px; display:flex; '
+                f'flex-direction:column; align-items:center; justify-content:center; gap:10px;">'
+                f'<div style="font-size:32px;">📡</div>'
+                f'<div style="color:#475569; font-size:14px; font-weight:600;">'
+                f'{selected_meta["name"]} chart loading</div>'
+                f'<div style="color:#334155; font-size:12px;">Refreshes in 5 min</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 else:
     st.markdown(
         '<div class="oc-tile" style="text-align:center; '
