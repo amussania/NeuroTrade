@@ -3428,54 +3428,32 @@ def load_waitlist_count() -> int:
         return 0
 
 def save_email(email: str) -> bool:
-    """Save email to Supabase waitlist table; fall back to CSV. Returns False if duplicate."""
     email = email.strip().lower()
-    # Try Supabase first
     try:
         sb = get_supabase()
         if sb:
-            existing = (
-                sb.table("waitlist")
-                .select("email")
-                .eq("email", email)
-                .execute()
-            )
+            existing = sb.table('waitlist').select('email').eq('email', email).execute()
             if existing.data:
                 return False
-            sb.table("waitlist").insert({
-                "email":     email,
-                "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
-            }).execute()
-            # Also mirror to CSV as backup
-            _csv_append_email(email)
-            st.session_state.pop("supabase_error", None)
+            sb.table('waitlist').insert({'email': email, 'timestamp': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")}).execute()
+            return True
+        else:
+            write_header = not os.path.exists(WAITLIST_FILE)
+            with open(WAITLIST_FILE, "a", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
+                if write_header:
+                    w.writerow(["email", "timestamp"])
+                w.writerow([email, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")])
             return True
     except Exception as e:
-        st.session_state["supabase_error"] = str(e)
-    # CSV fallback
-    return _csv_append_email(email)
-
-def _csv_append_email(email: str) -> bool:
-    """Append to local CSV; returns False if already present."""
-    exists = False
-    if os.path.exists(WAITLIST_FILE):
-        try:
-            with open(WAITLIST_FILE, newline="", encoding="utf-8") as f:
-                exists = any(row[0] == email for row in csv.reader(f) if row)
-        except Exception:
-            pass
-    if exists:
-        return False
-    write_header = not os.path.exists(WAITLIST_FILE)
-    try:
+        st.session_state['supabase_error'] = str(e)
+        write_header = not os.path.exists(WAITLIST_FILE)
         with open(WAITLIST_FILE, "a", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
             if write_header:
                 w.writerow(["email", "timestamp"])
             w.writerow([email, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")])
-    except Exception:
-        pass
-    return True
+        return True
 
 st.markdown('<div class="section-header">Learn Crypto Trading · 12 Topics with Quizzes</div>', unsafe_allow_html=True)
 
