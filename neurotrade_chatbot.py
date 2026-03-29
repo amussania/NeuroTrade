@@ -149,6 +149,29 @@ KNOWLEDGE_BASE = [
 
 
 def render_chatbot():
+    st.markdown("""
+    <style>
+    div[data-testid="stRadio"] label p {
+        color: #CBD5E1 !important;
+    }
+    div[data-testid="stRadio"] [data-baseweb="radio"] div:first-child {
+        border-color: #475569 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    if st.session_state.get('theme') == 'light':
+        st.markdown("""
+        <style>
+        div[data-testid="stRadio"] label p {
+            color: #1E293B !important;
+        }
+        div[data-testid="stRadio"] [data-baseweb="radio"] div:first-child {
+            border-color: #475569 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
     st.markdown('<div class="section-header">NeuroTrade AI Intelligence Course</div>', unsafe_allow_html=True)
 
     if 'completed_topics' not in st.session_state:
