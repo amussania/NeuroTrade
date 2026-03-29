@@ -3125,86 +3125,150 @@ else:
         unsafe_allow_html=True,
     )
 
-st.markdown('<div class="section-header">Signal Accuracy Tracker</div>', unsafe_allow_html=True)
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIGNAL METHODOLOGY
+# ═══════════════════════════════════════════════════════════════════════════════
+st.markdown('<div class="section-header">Our Signal Methodology</div>', unsafe_allow_html=True)
 
-accuracy_data = compute_accuracy_tracker(btc_yearly, fng30)
+st.markdown(
+    '<div class="oc-tile" style="padding:20px 24px 8px 24px; margin-bottom:8px;">'
+    '<div style="font-size:15px; font-weight:700; color:#E2E8F0; margin-bottom:16px; '
+    'background:linear-gradient(90deg,#00D4FF 0%,#7C3AED 100%); '
+    '-webkit-background-clip:text; -webkit-text-fill-color:transparent;">'
+    'How NeuroTrade Signals Work'
+    '</div>'
+    '</div>',
+    unsafe_allow_html=True,
+)
 
-if accuracy_data is None:
-    if btc_yearly is None:
-        _acc_msg = "BTC price history loading — auto-retrying in 5 minutes"
-    elif not _fng30_entries:
-        _acc_msg = "Fear & Greed history loading — auto-retrying in 5 minutes"
-    else:
-        _acc_msg = "Computing signal accuracy — check back shortly"
+_methodology_points = [
+    (
+        "linear-gradient(135deg,#10B981,#00D4FF)",
+        "◈",
+        "Fear Reversal Signal",
+        "Fires only when Fear &amp; Greed is below 30 for two consecutive days, price momentum "
+        "is turning positive, and the 7-day trend is above the &minus;20% threshold. "
+        "All three conditions must be true simultaneously.",
+    ),
+    (
+        "linear-gradient(135deg,#F97316,#EF4444)",
+        "◈",
+        "Greed Reversal Signal",
+        "Fires when extreme greed is detected above 70, suggesting elevated risk of correction.",
+    ),
+    (
+        "linear-gradient(135deg,#7C3AED,#00D4FF)",
+        "◈",
+        "Combined Intelligence Score",
+        "Synthesizes Fear &amp; Greed, 24h momentum, 7-day trend and on-chain volume into a "
+        "single 0 to 100 score updated in real time.",
+    ),
+    (
+        "linear-gradient(135deg,#64748B,#94A3B8)",
+        "◈",
+        "Live Tracking",
+        "Signal accuracy is being tracked live from launch day. Verified results will be "
+        "published at Day 90. No backtests. No cherry&#8209;picked data. "
+        "Real signals and real outcomes.",
+    ),
+]
+
+for _grad, _icon, _title, _body in _methodology_points:
     st.markdown(
-        f'<div class="oc-tile" style="text-align:center; padding:32px 24px;">'
-        f'<div style="color:#475569; font-size:13px;">'
-        f'<span class="live-dot"></span>{_acc_msg}</div>'
+        f'<div class="oc-tile" style="padding:16px 20px; margin-bottom:6px; display:flex; gap:16px; align-items:flex-start;">'
+        f'<div style="font-size:22px; background:{_grad}; '
+        f'-webkit-background-clip:text; -webkit-text-fill-color:transparent; '
+        f'flex-shrink:0; line-height:1.3;">{_icon}</div>'
+        f'<div>'
+        f'<div style="color:#E2E8F0; font-size:13px; font-weight:700; margin-bottom:4px;">{_title}</div>'
+        f'<div style="color:#94A3B8; font-size:12px; line-height:1.6;">{_body}</div>'
+        f'</div>'
         f'</div>',
         unsafe_allow_html=True,
     )
-else:
-    fear_returns_7d  = [r["return"] for r in accuracy_data if r["signal"] == "Fear Reversal Signal"  and r["period"] == "7d"]
-    greed_returns_7d = [r["return"] for r in accuracy_data if r["signal"] == "Greed Reversal Signal" and r["period"] == "7d"]
-    fear_winrate  = round(sum(1 for x in fear_returns_7d  if x > 0) / len(fear_returns_7d)  * 100) if fear_returns_7d  else None
-    greed_winrate = round(sum(1 for x in greed_returns_7d if x < 0) / len(greed_returns_7d) * 100) if greed_returns_7d else None
 
-    _acc_cols = st.columns(4, gap="large")
-    _acc_tiles = [
-        ("Fear Reversal Signals",  str(len(fear_returns_7d)),                             "in last 30 days",    "#10B981"),
-        ("Win Rate",               f"{fear_winrate}%"  if fear_winrate  is not None else "—", "price up 7d later",  "#10B981"),
-        ("Greed Reversal Signals", str(len(greed_returns_7d)),                            "in last 30 days",    "#F97316"),
-        ("Win Rate",               f"{greed_winrate}%" if greed_winrate is not None else "—", "price down 7d later","#F97316"),
-    ]
-    for col, (lbl, val, sub, col_) in zip(_acc_cols, _acc_tiles):
-        with col:
-            st.markdown(
-                f'<div class="oc-tile"><div class="oc-label">{lbl}</div>'
-                f'<div class="oc-value" style="color:{col_}; font-size:28px;">{val}</div>'
-                f'<div style="color:#64748B; font-size:11px; margin-top:4px;">{sub}</div></div>',
-                unsafe_allow_html=True,
-            )
+if False:
+    # ── Signal Accuracy Tracker (hidden at launch; re-enable at Day 90) ─────────
+    st.markdown('<div class="section-header">Signal Accuracy Tracker</div>', unsafe_allow_html=True)
 
-    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+    accuracy_data = compute_accuracy_tracker(btc_yearly, fng30)
 
-    with st.expander("View Full Signal History →", expanded=False):
-        _hdr = st.columns([2, 2, 2, 2, 2], gap="small")
-        for col, label in zip(_hdr, ["Date", "Signal", "F&G Score", "BTC Price at Signal", "7-Day Return"]):
+    if accuracy_data is None:
+        if btc_yearly is None:
+            _acc_msg = "BTC price history loading — auto-retrying in 5 minutes"
+        elif not _fng30_entries:
+            _acc_msg = "Fear & Greed history loading — auto-retrying in 5 minutes"
+        else:
+            _acc_msg = "Computing signal accuracy — check back shortly"
+        st.markdown(
+            f'<div class="oc-tile" style="text-align:center; padding:32px 24px;">'
+            f'<div style="color:#475569; font-size:13px;">'
+            f'<span class="live-dot"></span>{_acc_msg}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        fear_returns_7d  = [r["return"] for r in accuracy_data if r["signal"] == "Fear Reversal Signal"  and r["period"] == "7d"]
+        greed_returns_7d = [r["return"] for r in accuracy_data if r["signal"] == "Greed Reversal Signal" and r["period"] == "7d"]
+        fear_winrate  = round(sum(1 for x in fear_returns_7d  if x > 0) / len(fear_returns_7d)  * 100) if fear_returns_7d  else None
+        greed_winrate = round(sum(1 for x in greed_returns_7d if x < 0) / len(greed_returns_7d) * 100) if greed_returns_7d else None
+
+        _acc_cols = st.columns(4, gap="large")
+        _acc_tiles = [
+            ("Fear Reversal Signals",  str(len(fear_returns_7d)),                             "in last 30 days",    "#10B981"),
+            ("Win Rate",               f"{fear_winrate}%"  if fear_winrate  is not None else "—", "price up 7d later",  "#10B981"),
+            ("Greed Reversal Signals", str(len(greed_returns_7d)),                            "in last 30 days",    "#F97316"),
+            ("Win Rate",               f"{greed_winrate}%" if greed_winrate is not None else "—", "price down 7d later","#F97316"),
+        ]
+        for col, (lbl, val, sub, col_) in zip(_acc_cols, _acc_tiles):
             with col:
-                st.markdown(f'<div style="color:#475569; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:4px 0;">{label}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="oc-tile"><div class="oc-label">{lbl}</div>'
+                    f'<div class="oc-value" style="color:{col_}; font-size:28px;">{val}</div>'
+                    f'<div style="color:#64748B; font-size:11px; margin-top:4px;">{sub}</div></div>',
+                    unsafe_allow_html=True,
+                )
 
-        seen = set()
-        for r in accuracy_data:
-            if r["period"] == "7d":
-                key = r["date"] + r["signal"]
-                if key in seen:
-                    continue
-                seen.add(key)
-                ret_color = "#10B981" if r["return"] > 0 else "#EF4444"
-                ret_arrow = "▲" if r["return"] > 0 else "▼"
-                _row = st.columns([2, 2, 2, 2, 2], gap="small")
-                with _row[0]:
-                    st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">{r["date"]}</div>', unsafe_allow_html=True)
-                with _row[1]:
-                    st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{r["color"]}; font-size:12px; font-weight:700; letter-spacing:1px;">{r["signal"]}</div>', unsafe_allow_html=True)
-                with _row[2]:
-                    st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">{r["fng"]}</div>', unsafe_allow_html=True)
-                with _row[3]:
-                    st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">${r["price_at"]:,.0f}</div>', unsafe_allow_html=True)
-                with _row[4]:
-                    st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{ret_color}; font-size:13px; font-weight:700;">{ret_arrow} {abs(r["return"]):.2f}%</div>', unsafe_allow_html=True)
-                if r["signal"] == "Fear Reversal Signal":
-                    st.markdown(
-                        '<div style="color:#64748B; font-size:11px; padding:6px 14px; '
-                        'background:transparent; border:none; font-style:italic;">'
-                        'Signal triggered because: Extreme Fear for 2+ consecutive days '
-                        '&middot; Price momentum turning positive '
-                        '&middot; 7-day trend above -20% threshold.'
-                        '</div>',
-                        unsafe_allow_html=True,
-                    )
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
 
-        st.markdown('<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">Fear &amp; Greed used as contrarian indicator. Extreme fear historically precedes recovery. Extreme greed historically precedes correction. Not financial advice.</div>', unsafe_allow_html=True)
+        with st.expander("View Full Signal History →", expanded=False):
+            _hdr = st.columns([2, 2, 2, 2, 2], gap="small")
+            for col, label in zip(_hdr, ["Date", "Signal", "F&G Score", "BTC Price at Signal", "7-Day Return"]):
+                with col:
+                    st.markdown(f'<div style="color:#475569; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:4px 0;">{label}</div>', unsafe_allow_html=True)
+
+            seen = set()
+            for r in accuracy_data:
+                if r["period"] == "7d":
+                    key = r["date"] + r["signal"]
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    ret_color = "#10B981" if r["return"] > 0 else "#EF4444"
+                    ret_arrow = "▲" if r["return"] > 0 else "▼"
+                    _row = st.columns([2, 2, 2, 2, 2], gap="small")
+                    with _row[0]:
+                        st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">{r["date"]}</div>', unsafe_allow_html=True)
+                    with _row[1]:
+                        st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{r["color"]}; font-size:12px; font-weight:700; letter-spacing:1px;">{r["signal"]}</div>', unsafe_allow_html=True)
+                    with _row[2]:
+                        st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">{r["fng"]}</div>', unsafe_allow_html=True)
+                    with _row[3]:
+                        st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">${r["price_at"]:,.0f}</div>', unsafe_allow_html=True)
+                    with _row[4]:
+                        st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{ret_color}; font-size:13px; font-weight:700;">{ret_arrow} {abs(r["return"]):.2f}%</div>', unsafe_allow_html=True)
+                    if r["signal"] == "Fear Reversal Signal":
+                        st.markdown(
+                            '<div style="color:#64748B; font-size:11px; padding:6px 14px; '
+                            'background:transparent; border:none; font-style:italic;">'
+                            'Signal triggered because: Extreme Fear for 2+ consecutive days '
+                            '&middot; Price momentum turning positive '
+                            '&middot; 7-day trend above -20% threshold.'
+                            '</div>',
+                            unsafe_allow_html=True,
+                        )
+
+            st.markdown('<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">Fear &amp; Greed used as contrarian indicator. Extreme fear historically precedes recovery. Extreme greed historically precedes correction. Not financial advice.</div>', unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WHALE ACTIVITY
