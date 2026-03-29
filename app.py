@@ -410,7 +410,7 @@ html, body, [class*="css"], .stApp {
     flex-shrink: 0;
     margin-top: 1px;
     font-size: 11px;
-    color: #FFFFFF;
+    color: var(--text-primary);
     font-weight: 700;
 }
 .waitlist-counter-box {
@@ -985,10 +985,10 @@ def make_price_chart(df, meta):
         hovermode="x unified",
         title=dict(
             text=(
-                f"<b style='color:#FFFFFF'>{meta['name']}</b>"
+                f"<b style='color:var(--text-primary)'>{meta['name']}</b>"
                 f"  <span style='color:{trend_color};font-size:14px'>"
                 f"{arrow} {abs(chg):.2f}%</span>"
-                f"  <span style='color:#475569;font-size:12px'>7 days</span>"
+                f"  <span style='color:var(--text-very-dim);font-size:12px'>7 days</span>"
             ),
             font=dict(size=15, family="Inter"),
             x=0.02, xanchor="left",
@@ -1192,11 +1192,11 @@ def make_terminal_chart(ohlc_df, vol_df, meta, days=7):
         ),
         title=dict(
             text=(
-                f"<b style='color:#FFFFFF; font-size:16px;'>{meta['name']}</b>"
+                f"<b style='color:var(--text-primary); font-size:16px;'>{meta['name']}</b>"
                 f"  <span style='color:{chg_color}; font-size:13px;'>"
                 f"{arrow} {abs(chg):.2f}%</span>"
-                f"  <span style='color:#475569; font-size:12px;'>{days}D</span>"
-                f"  <span style='color:#334155; font-size:11px;'>"
+                f"  <span style='color:var(--text-very-dim); font-size:12px;'>{days}D</span>"
+                f"  <span style='color:var(--text-muted); font-size:11px;'>"
                 f"  H: ${price_max:,.2f}  L: ${price_min:,.2f}</span>"
             ),
             font=dict(size=14, family="Inter"),
@@ -1580,7 +1580,7 @@ with col_logo:
                      letter-spacing:-1px; line-height:1;">
             ⬡ NeuroTrade AI
         </span>
-        <span style="color:#334155; font-size:14px; font-weight:500;
+        <span style="color:var(--text-muted); font-size:14px; font-weight:500;
                      border-left:1px solid #1E293B; padding-left:16px;">
             Know Before The Market Moves
         </span>
@@ -1606,8 +1606,8 @@ with col_ts:
                     LIVE
                 </span>
             </div>
-            <div style="color:#475569; font-size:12px;">{now}</div>
-            <div style="color:#334155; font-size:11px; margin-top:2px;">Auto-refresh: 5 min</div>
+            <div style="color:var(--text-very-dim); font-size:12px;">{now}</div>
+            <div style="color:var(--text-muted); font-size:11px; margin-top:2px;">Auto-refresh: 5 min</div>
             <div style="font-size:11px; margin-top:2px; color:{timer_color};">
                 Next refresh in {mins}:{secs:02d}
             </div>
@@ -1632,9 +1632,9 @@ if st.session_state.theme == "light":
         --border:               #CBD5E1;
         --border-hover:         #94A3B8;
         --text-primary:         #0F172A;
-        --text-secondary:       #374151;
-        --text-muted:           #374151;
-        --text-dim:             #64748B;
+        --text-secondary:       #1E293B;
+        --text-muted:           #334155;
+        --text-dim:             #475569;
         --text-very-dim:        #64748B;
         --scrollbar-track:      #E2E8F0;
         --scrollbar-thumb:      #94A3B8;
@@ -1711,7 +1711,7 @@ with sel_col:
 st.session_state.selected_asset = selected_coin
 
 st.markdown(
-    '<div style="color:#475569; font-size:11px; margin-top:4px; margin-bottom:2px;">'
+    '<div style="color:var(--text-very-dim); font-size:11px; margin-top:4px; margin-bottom:2px;">'
     'Switch between 9 assets: BTC, ETH, SOL, XRP, ADA, AVAX, DOGE, DOT, LINK'
     '</div>',
     unsafe_allow_html=True,
@@ -1753,7 +1753,7 @@ if score is not None:
         <div class="intel-card">
             <div style="display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap;">
                 <div>
-                    <div style="color:#64748B; font-size:11px; font-weight:700;
+                    <div style="color:var(--text-dim); font-size:11px; font-weight:700;
                                 letter-spacing:2px; text-transform:uppercase;
                                 margin-bottom:10px;">
                         {sym} · AI Market Signal
@@ -1762,13 +1762,13 @@ if score is not None:
                         {score}
                     </div>
                     <div class="intel-label" style="color:{s_color};">{label}</div>
-                    <div style="color:#64748B; font-size:11px; margin-top:6px; line-height:1.5;">
+                    <div style="color:var(--text-dim); font-size:11px; margin-top:6px; line-height:1.5;">
                         Score above 70 = bullish signal. Below 30 = bearish signal.
                         30 to 70 = neutral zone. Updated every 30 seconds.
                     </div>
                 </div>
                 <div style="flex:1; min-width:130px; padding-bottom:8px;">
-                    <div style="color:#475569; font-size:10px; font-weight:600;
+                    <div style="color:var(--text-very-dim); font-size:10px; font-weight:600;
                                 letter-spacing:1px; text-transform:uppercase;
                                 margin-bottom:6px; text-align:right;">
                         BEAR &nbsp;·&nbsp; 0 ——— 100 &nbsp;·&nbsp; BULL
@@ -1779,8 +1779,8 @@ if score is not None:
                         </div>
                     </div>
                     <div style="display:flex; justify-content:space-between; margin-top:6px;">
-                        <span style="color:#334155; font-size:10px;">Strong Bear</span>
-                        <span style="color:#334155; font-size:10px;">Strong Bull</span>
+                        <span style="color:var(--text-muted); font-size:10px;">Strong Bear</span>
+                        <span style="color:var(--text-muted); font-size:10px;">Strong Bull</span>
                     </div>
                 </div>
             </div>
@@ -1789,7 +1789,7 @@ if score is not None:
             </div>
             {
             f'<div style="margin-top:14px; padding-top:14px; border-top:1px solid #334155;">'
-            f'<span style="color:#334155; font-size:11px; font-weight:500;">'
+            f'<span style="color:var(--text-muted); font-size:11px; font-weight:500;">'
             f'⚠ On-chain component excluded for {sym} — Blockchain.com data covers Bitcoin only. '
             f'Weight redistributed across remaining signals.'
             f'</span></div>'
@@ -1800,7 +1800,7 @@ if score is not None:
 
     with right_breakdown:
         st.markdown(f"""
-        <div style="color:#64748B; font-size:11px; font-weight:700; letter-spacing:2px;
+        <div style="color:var(--text-dim); font-size:11px; font-weight:700; letter-spacing:2px;
                     text-transform:uppercase; margin-bottom:16px; margin-top:4px;">
             Signal Breakdown &nbsp;·&nbsp;
             <span style="color:{asset_color}; font-weight:700;">{sym}</span>
@@ -1822,7 +1822,7 @@ if score is not None:
                         </span>
                         <span class="intel-comp-value" style="color:{col};">
                             {round(raw)}&nbsp;
-                            <span style="font-size:11px; color:#475569;">{lbl}</span>
+                            <span style="font-size:11px; color:var(--text-very-dim);">{lbl}</span>
                         </span>
                     </div>
                     <div class="intel-comp-bar-track">
@@ -1830,7 +1830,7 @@ if score is not None:
                              style="width:{raw:.1f}%; background:{grad};">
                         </div>
                     </div>
-                    <div style="color:#334155; font-size:10px; margin-top:4px;">{note}</div>
+                    <div style="color:var(--text-muted); font-size:10px; margin-top:4px;">{note}</div>
                 </div>
                 """, unsafe_allow_html=True)
             else:
@@ -1842,20 +1842,20 @@ if score is not None:
                     <div style="display:flex; justify-content:space-between;
                                 align-items:baseline; margin-bottom:6px;">
                         <span class="intel-comp-label">{display_name}
-                            <span style="color:#1E293B; font-weight:400;">&nbsp;{weight_pct}%</span>
+                            <span style="color:var(--text-secondary); font-weight:400;">&nbsp;{weight_pct}%</span>
                         </span>
-                        <span style="color:#334155; font-size:12px;">—</span>
+                        <span style="color:var(--text-muted); font-size:12px;">—</span>
                     </div>
                     <div class="intel-comp-bar-track">
                         <div style="width:0%; height:100%;"></div>
                     </div>
-                    <div style="color:#334155; font-size:10px; margin-top:4px;">{note_text}</div>
+                    <div style="color:var(--text-muted); font-size:10px; margin-top:4px;">{note_text}</div>
                 </div>
                 """, unsafe_allow_html=True)
 else:
     st.markdown("""
     <div class="intel-card" style="text-align:center; padding:48px;">
-        <div style="color:#475569; font-size:16px;">
+        <div style="color:var(--text-very-dim); font-size:16px;">
             Gathering signals — score will appear once data loads.
         </div>
     </div>
@@ -1894,13 +1894,13 @@ if prices and selected_coin in prices:
         f'<div class="coin-label" style="color:{asset_color}; font-size:15px;">'
         f'<span class="coin-dot" style="background:{asset_color}; width:12px; height:12px;"></span>'
         f'{_pc_meta["symbol"]}'
-        f'<span style="color:#475569; font-weight:400;"> · </span>'
+        f'<span style="color:var(--text-very-dim); font-weight:400;"> · </span>'
         f'<span style="color:#94A3B8; font-weight:500;">{_pc_meta["name"]}</span>'
         f'</div>'
         f'<div class="coin-price">{fmt_price(_price)}</div>'
         f'<div style="margin:6px 0 0 0;">'
         f'{change_badge(_chg)}'
-        f'<span style="color:#475569; font-size:13px; margin-left:8px;">24h change</span>'
+        f'<span style="color:var(--text-very-dim); font-size:13px; margin-left:8px;">24h change</span>'
         f'</div>'
         f'<div class="sub-grid" style="margin-top:16px;">'
         f'<div><div class="sub-item-label">Market Cap</div>'
@@ -1918,7 +1918,7 @@ if prices and selected_coin in prices:
     else:
         st.markdown(
             '<div class="oc-tile" style="text-align:center; padding:24px;">'
-            '<div style="color:#475569; font-size:13px;">'
+            '<div style="color:var(--text-very-dim); font-size:13px;">'
             'Chart data loading. If this section stays blank, please wait 5 minutes and refresh the page.'
             '</div></div>',
             unsafe_allow_html=True,
@@ -1930,7 +1930,7 @@ if prices and selected_coin in prices:
     st.markdown(
         f'<div class="section-header">Price Chart &nbsp;·&nbsp; '
         f'<span style="color:{asset_color};">{selected_meta["name"]}</span>'
-        f'<span style="color:#334155; font-size:11px; font-weight:400;">'
+        f'<span style="color:var(--text-muted); font-size:11px; font-weight:400;">'
         f'&nbsp;&nbsp;Scroll to zoom · Drag to pan · Click fullscreen ↗</span></div>',
         unsafe_allow_html=True,
     )
@@ -2003,9 +2003,9 @@ div[data-testid="stHorizontalBlock"] button {{
                 f'<div class="oc-tile" style="height:480px; display:flex; '
                 f'flex-direction:column; align-items:center; justify-content:center; gap:10px;">'
                 f'<div style="font-size:32px;">📡</div>'
-                f'<div style="color:#475569; font-size:14px; font-weight:600;">'
+                f'<div style="color:var(--text-very-dim); font-size:14px; font-weight:600;">'
                 f'{selected_meta["name"]} chart loading</div>'
-                f'<div style="color:#334155; font-size:12px;">Refreshes in 5 min</div>'
+                f'<div style="color:var(--text-muted); font-size:12px;">Refreshes in 5 min</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -2013,7 +2013,7 @@ else:
     st.markdown(
         '<div class="oc-tile" style="text-align:center; '
         'padding:20px 24px; margin-bottom:8px;">'
-        '<div style="color:#475569; font-size:13px;">'
+        '<div style="color:var(--text-very-dim); font-size:13px;">'
         '<span class="live-dot"></span>'
         'Price data refreshing — auto-retrying in 5 minutes</div>'
         '</div>',
@@ -2047,7 +2047,7 @@ with left:
         st.markdown(f"""
         <div class="fng-label-big" style="color:{color};">{label}</div>
         <div class="fng-sub">Today's reading · Score {val}/100</div>
-        <div class="fng-sub" style="margin-top:6px; font-size:11px; color:#64748B;">
+        <div class="fng-sub" style="margin-top:6px; font-size:11px; color:var(--text-dim);">
             Market-wide crypto sentiment index
         </div>
         """, unsafe_allow_html=True)
@@ -2058,7 +2058,7 @@ with left:
                         use_container_width=True, config={"displayModeBar": False})
     else:
         st.markdown("""
-        <div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">
+        <div class="oc-tile" style="text-align:center; padding:48px 24px; color:var(--text-very-dim);">
             <div style="font-size:28px; margin-bottom:8px;">📊</div>
             <div style="font-size:14px;">Sentiment data unavailable</div>
         </div>
@@ -2071,8 +2071,8 @@ with left:
         st.markdown(
             '<div class="oc-tile">'
             '<div class="oc-label">Trending Status</div>'
-            '<div class="oc-value" style="color:#475569; font-size:16px;">Unavailable</div>'
-            '<div style="color:#475569; font-size:11px; margin-top:6px;">CoinGecko search ranking updated hourly</div>'
+            '<div class="oc-value" style="color:var(--text-very-dim); font-size:16px;">Unavailable</div>'
+            '<div style="color:var(--text-very-dim); font-size:11px; margin-top:6px;">CoinGecko search ranking updated hourly</div>'
             '</div>',
             unsafe_allow_html=True,
         )
@@ -2083,7 +2083,7 @@ with left:
             f'<div class="oc-label">Trending Status</div>'
             f'<div class="oc-value" style="color:#10B981; font-size:22px; font-weight:800;">🔥 TRENDING</div>'
             f'<div style="color:#10B981; font-size:12px; font-weight:600; margin-top:4px; letter-spacing:1px;">#{_trend_rank} on CoinGecko right now</div>'
-            f'<div style="color:#475569; font-size:11px; margin-top:6px;">CoinGecko search ranking updated hourly</div>'
+            f'<div style="color:var(--text-very-dim); font-size:11px; margin-top:6px;">CoinGecko search ranking updated hourly</div>'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -2091,9 +2091,9 @@ with left:
         st.markdown(
             '<div class="oc-tile">'
             '<div class="oc-label">Trending Status</div>'
-            '<div class="oc-value" style="color:#475569; font-size:22px; font-weight:800;">NOT TRENDING</div>'
-            '<div style="color:#475569; font-size:12px; margin-top:4px;">Not in top 7 searches</div>'
-            '<div style="color:#475569; font-size:11px; margin-top:6px;">CoinGecko search ranking updated hourly</div>'
+            '<div class="oc-value" style="color:var(--text-very-dim); font-size:22px; font-weight:800;">NOT TRENDING</div>'
+            '<div style="color:var(--text-very-dim); font-size:12px; margin-top:4px;">Not in top 7 searches</div>'
+            '<div style="color:var(--text-very-dim); font-size:11px; margin-top:6px;">CoinGecko search ranking updated hourly</div>'
             '</div>',
             unsafe_allow_html=True,
         )
@@ -2144,7 +2144,7 @@ with right:
                     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
             st.markdown(
-                f'<div style="color:#475569; font-size:11px; text-align:right; '
+                f'<div style="color:var(--text-very-dim); font-size:11px; text-align:right; '
                 f'margin-bottom:8px;">'
                 f'Source: Blockchain.com &nbsp;·&nbsp; Last updated: '
                 f'{datetime.utcnow().strftime("%H:%M")} UTC'
@@ -2180,7 +2180,7 @@ with right:
                 <div style="background:#162032; border:1px solid #334155; border-radius:16px;
                             padding:20px 28px; display:flex; align-items:center; justify-content:space-between;">
                     <div>
-                        <div style="color:#64748B; font-size:11px; font-weight:700;
+                        <div style="color:var(--text-dim); font-size:11px; font-weight:700;
                                     letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;">
                             BTC Reference Price · Blockchain.com
                         </div>
@@ -2194,7 +2194,7 @@ with right:
                 </div>""", unsafe_allow_html=True)
         else:
             st.markdown("""
-            <div class="oc-tile" style="text-align:center; padding:60px 24px; color:#475569;">
+            <div class="oc-tile" style="text-align:center; padding:60px 24px; color:var(--text-very-dim);">
                 <div style="font-size:28px; margin-bottom:8px;">⛓️</div>
                 <div style="font-size:14px;">Blockchain data unavailable</div>
             </div>""", unsafe_allow_html=True)
@@ -2282,13 +2282,13 @@ with right:
                     f'<div class="oc-label">Gas Price (Gwei)</div>'
                     f'<div style="margin-top:8px; display:flex; flex-direction:column; gap:4px;">'
                     f'<div style="display:flex; justify-content:space-between; font-size:12px;">'
-                    f'<span style="color:#64748B;">Safe</span>'
+                    f'<span style="color:var(--text-dim);">Safe</span>'
                     f'<span style="color:#10B981; font-weight:600;">{_gas_safe}</span></div>'
                     f'<div style="display:flex; justify-content:space-between; font-size:12px;">'
-                    f'<span style="color:#64748B;">Standard</span>'
+                    f'<span style="color:var(--text-dim);">Standard</span>'
                     f'<span style="color:#F59E0B; font-weight:600;">{_gas_std}</span></div>'
                     f'<div style="display:flex; justify-content:space-between; font-size:12px;">'
-                    f'<span style="color:#64748B;">Fast</span>'
+                    f'<span style="color:var(--text-dim);">Fast</span>'
                     f'<span style="color:#EF4444; font-weight:600;">{_gas_fast}</span></div>'
                     f'</div></div>',
                     unsafe_allow_html=True,
@@ -2297,7 +2297,7 @@ with right:
                 st.markdown(
                     '<div class="oc-tile">'
                     '<div class="oc-label">Gas Price (Gwei)</div>'
-                    '<div class="oc-value" style="color:#475569; font-size:16px;">Unavailable</div>'
+                    '<div class="oc-value" style="color:var(--text-very-dim); font-size:16px;">Unavailable</div>'
                     '</div>',
                     unsafe_allow_html=True,
                 )
@@ -2328,7 +2328,7 @@ with right:
         st.markdown("""
         <div class="oc-tile" style="margin-top:8px; opacity:0.6;">
             <div class="oc-label">Full On-Chain Data</div>
-            <div class="oc-value" style="font-size:16px; color:#64748B;">
+            <div class="oc-value" style="font-size:16px; color:var(--text-dim);">
                 Coming soon
             </div>
         </div>""", unsafe_allow_html=True)
@@ -2365,7 +2365,7 @@ with right:
                     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
         else:
             st.markdown(
-                '<div class="oc-tile" style="text-align:center; padding:60px 24px; color:#475569;">'
+                '<div class="oc-tile" style="text-align:center; padding:60px 24px; color:var(--text-very-dim);">'
                 '<div style="font-size:28px; margin-bottom:8px;">📊</div>'
                 '<div style="font-size:14px;">Market data unavailable</div>'
                 '</div>',
@@ -2374,7 +2374,7 @@ with right:
         st.markdown(
             '<div class="oc-tile" style="margin-top:8px; opacity:0.6;">'
             '<div class="oc-label">Network &amp; On-Chain Data</div>'
-            '<div class="oc-value" style="font-size:16px; color:#64748B;">Coming soon</div>'
+            '<div class="oc-value" style="font-size:16px; color:var(--text-dim);">Coming soon</div>'
             '</div>',
             unsafe_allow_html=True,
         )
@@ -2437,7 +2437,7 @@ if _articles:
             )
 else:
     st.markdown(
-        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
+        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:var(--text-very-dim);">'
         '<div style="font-size:28px; margin-bottom:8px;">📰</div>'
         '<div style="font-size:14px;">News unavailable — add your NewsAPI key to enable this section</div>'
         '</div>',
@@ -2499,7 +2499,7 @@ if _fng30_entries:
                 f'<div class="oc-tile">'
                 f'<div class="oc-label">{lbl}</div>'
                 f'<div class="oc-value" style="color:{col_}; font-size:28px;">{val}</div>'
-                f'<div style="color:#64748B; font-size:11px; margin-top:4px;">{sub}</div>'
+                f'<div style="color:var(--text-dim); font-size:11px; margin-top:4px;">{sub}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -2509,7 +2509,7 @@ if _fng30_entries:
                     config={"displayModeBar": False})
 else:
     st.markdown(
-        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
+        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:var(--text-very-dim);">'
         '<div style="font-size:28px; margin-bottom:8px;">📊</div>'
         '<div style="font-size:14px;">Signal history unavailable</div>'
         '</div>',
@@ -2587,7 +2587,7 @@ else:
     st.markdown(
         '<div class="oc-tile" style="text-align:center; '
         'padding:20px 24px;">'
-        '<div style="color:#475569; font-size:13px;">'
+        '<div style="color:var(--text-very-dim); font-size:13px;">'
         'Positioning data refreshing</div>'
         '</div>',
         unsafe_allow_html=True,
@@ -2612,7 +2612,7 @@ if corr_data is not None:
     font-weight:700; letter-spacing:2px;
     text-transform:uppercase; margin-bottom:16px;">
     30-Day Price Return Correlation ·
-    <span style="color:#475569; font-weight:400;">
+    <span style="color:var(--text-very-dim); font-weight:400;">
     +1.0 = moves together · -1.0 = moves opposite ·
     0 = no relationship</span>
     </div>
@@ -2720,7 +2720,7 @@ else:
     st.markdown(
         '<div class="oc-tile" style="text-align:center; '
         'padding:32px 24px;">'
-        '<div style="color:#475569; font-size:13px;">'
+        '<div style="color:var(--text-very-dim); font-size:13px;">'
         '<span class="live-dot"></span>'
         'Correlation data loading — updates every hour'
         '</div></div>',
@@ -2787,7 +2787,7 @@ for col, (lbl, val, unit, col_, note) in zip(_macro_cols, _macro_tiles):
             f'<div class="oc-label">{lbl}</div>'
             f'<div class="oc-value" style="color:{col_};">{val}'
             f'<span class="oc-unit">{unit}</span></div>'
-            f'<div style="color:#475569; font-size:11px; margin-top:6px;">{note}</div>'
+            f'<div style="color:var(--text-very-dim); font-size:11px; margin-top:6px;">{note}</div>'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -2816,7 +2816,7 @@ if _macro_insights:
 elif _dff is None and _dxy is None:
     st.markdown(
         '<div class="oc-tile" style="margin-top:12px; text-align:center;'
-        ' padding:32px 24px; color:#475569;">'
+        ' padding:32px 24px; color:var(--text-very-dim);">'
         '<div style="font-size:14px;">Macro data unavailable — add your FRED API key to enable</div>'
         '</div>',
         unsafe_allow_html=True,
@@ -2931,8 +2931,8 @@ try:
                 f'<div class="oc-tile">'
                 f'<div class="oc-label">{lbl}</div>'
                 f'<div class="oc-value" style="color:{col_}; font-size:28px;">{val}</div>'
-                f'<div style="color:#64748B; font-size:11px; margin-top:4px;">{sub}</div>'
-                + (f'<div style="color:#475569; font-size:11px; margin-top:6px;'
+                f'<div style="color:var(--text-dim); font-size:11px; margin-top:4px;">{sub}</div>'
+                + (f'<div style="color:var(--text-very-dim); font-size:11px; margin-top:6px;'
                    f' font-style:italic;">{note}</div>' if note else '')
                 + '</div>',
                 unsafe_allow_html=True,
@@ -2941,7 +2941,7 @@ try:
 except Exception as e:
     st.markdown(
         '<div class="oc-tile" style="text-align:center; padding:32px 24px;">'
-        '<div style="color:#475569; font-size:13px;">'
+        '<div style="color:var(--text-very-dim); font-size:13px;">'
         'Chart data loading. If this section stays blank, please wait 5 minutes and refresh the page.'
         '</div></div>',
         unsafe_allow_html=True,
@@ -3129,7 +3129,7 @@ if signal_history is not None and not signal_history.empty:
                 f'<div class="oc-label">{lbl}</div>'
                 f'<div class="oc-value" style="color:{col_}; '
                 f'font-size:24px;">{val}</div>'
-                f'<div style="color:#64748B; font-size:11px; '
+                f'<div style="color:var(--text-dim); font-size:11px; '
                 f'margin-top:4px;">{sub}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
@@ -3138,7 +3138,7 @@ else:
     st.markdown(
         '<div class="oc-tile" style="text-align:center; '
         'padding:32px 24px;">'
-        '<div style="color:#475569; font-size:13px;">'
+        '<div style="color:var(--text-very-dim); font-size:13px;">'
         '<span class="live-dot"></span>'
         '90-day history loading — auto-retrying'
         '</div></div>',
@@ -3222,7 +3222,7 @@ if False:
             _acc_msg = "Computing signal accuracy — check back shortly"
         st.markdown(
             f'<div class="oc-tile" style="text-align:center; padding:32px 24px;">'
-            f'<div style="color:#475569; font-size:13px;">'
+            f'<div style="color:var(--text-very-dim); font-size:13px;">'
             f'<span class="live-dot"></span>{_acc_msg}</div>'
             f'</div>',
             unsafe_allow_html=True,
@@ -3245,7 +3245,7 @@ if False:
                 st.markdown(
                     f'<div class="oc-tile"><div class="oc-label">{lbl}</div>'
                     f'<div class="oc-value" style="color:{col_}; font-size:28px;">{val}</div>'
-                    f'<div style="color:#64748B; font-size:11px; margin-top:4px;">{sub}</div></div>',
+                    f'<div style="color:var(--text-dim); font-size:11px; margin-top:4px;">{sub}</div></div>',
                     unsafe_allow_html=True,
                 )
 
@@ -3255,7 +3255,7 @@ if False:
             _hdr = st.columns([2, 2, 2, 2, 2], gap="small")
             for col, label in zip(_hdr, ["Date", "Signal", "F&G Score", "BTC Price at Signal", "7-Day Return"]):
                 with col:
-                    st.markdown(f'<div style="color:#475569; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:4px 0;">{label}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="color:var(--text-very-dim); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:4px 0;">{label}</div>', unsafe_allow_html=True)
 
             seen = set()
             for r in accuracy_data:
@@ -3279,7 +3279,7 @@ if False:
                         st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{ret_color}; font-size:13px; font-weight:700;">{ret_arrow} {abs(r["return"]):.2f}%</div>', unsafe_allow_html=True)
                     if r["signal"] == "Fear Reversal Signal":
                         st.markdown(
-                            '<div style="color:#64748B; font-size:11px; padding:6px 14px; '
+                            '<div style="color:var(--text-dim); font-size:11px; padding:6px 14px; '
                             'background:transparent; border:none; font-style:italic;">'
                             'Signal triggered because: Extreme Fear for 2+ consecutive days '
                             '&middot; Price momentum turning positive '
@@ -3288,7 +3288,7 @@ if False:
                             unsafe_allow_html=True,
                         )
 
-            st.markdown('<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">Fear &amp; Greed used as contrarian indicator. Extreme fear historically precedes recovery. Extreme greed historically precedes correction. Not financial advice.</div>', unsafe_allow_html=True)
+            st.markdown('<div style="color:var(--text-very-dim); font-size:11px; margin-top:12px; text-align:right;">Fear &amp; Greed used as contrarian indicator. Extreme fear historically precedes recovery. Extreme greed historically precedes correction. Not financial advice.</div>', unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WHALE ACTIVITY
@@ -3297,15 +3297,15 @@ st.markdown('<div class="section-header">Whale Activity</div>', unsafe_allow_htm
 
 if whale_txs is None:
     st.markdown(
-        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
+        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:var(--text-very-dim);">'
         '<div style="font-size:28px; margin-bottom:8px;">🐋</div>'
-        '<div style="font-size:13px; color:#475569;">Whale data refreshing — auto-retrying in 5 minutes</div>'
+        '<div style="font-size:13px; color:var(--text-very-dim);">Whale data refreshing — auto-retrying in 5 minutes</div>'
         '</div>',
         unsafe_allow_html=True,
     )
 elif len(whale_txs) == 0:
     st.markdown(
-        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:#475569;">'
+        '<div class="oc-tile" style="text-align:center; padding:48px 24px; color:var(--text-very-dim);">'
         '<div style="font-size:28px; margin-bottom:8px;">🐋</div>'
         '<div style="font-size:14px;">No unconfirmed transactions over 10 BTC right now</div>'
         '</div>',
@@ -3355,7 +3355,7 @@ else:
     for col, label in zip(_hdr_cols, ["TX Hash", "BTC Amount", "Inputs / Outputs", "Size"]):
         with col:
             st.markdown(
-                f'<div style="color:#475569; font-size:11px; font-weight:700;'
+                f'<div style="color:var(--text-very-dim); font-size:11px; font-weight:700;'
                 f' letter-spacing:1.5px; text-transform:uppercase; padding:4px 0;">{label}</div>',
                 unsafe_allow_html=True,
             )
@@ -3373,14 +3373,14 @@ else:
         with _row[0]:
             st.markdown(
                 f'<div class="oc-tile" style="padding:10px 14px; font-family:monospace;'
-                f' font-size:12px; color:#64748B;">{w["hash"]}</div>',
+                f' font-size:12px; color:var(--text-dim);">{w["hash"]}</div>',
                 unsafe_allow_html=True,
             )
         with _row[1]:
             st.markdown(
                 f'<div class="oc-tile" style="padding:10px 14px;">'
                 f'<span style="color:#F7931A; font-weight:700; font-size:13px;">{_btc:,.2f}</span>'
-                f'<span style="color:#475569; font-size:11px;"> BTC</span></div>',
+                f'<span style="color:var(--text-very-dim); font-size:11px;"> BTC</span></div>',
                 unsafe_allow_html=True,
             )
         with _row[2]:
@@ -3398,7 +3398,7 @@ else:
             )
 
     st.markdown(
-        '<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">'
+        '<div style="color:var(--text-very-dim); font-size:11px; margin-top:12px; text-align:right;">'
         'Showing unconfirmed BTC transactions over 10 BTC. Updates every 5 minutes.</div>',
         unsafe_allow_html=True,
     )
@@ -3662,7 +3662,7 @@ with wl_right:
         </div>
         <div class="waitlist-counter-label">
             founding members so far<br>
-            <span style="color:#334155; font-size:11px;">150 spots · {150 - fresh_count} remaining</span>
+            <span style="color:var(--text-muted); font-size:11px;">150 spots · {150 - fresh_count} remaining</span>
         </div>
         <div style="margin-left:auto;">
             <div style="width:80px; height:6px; background:#0B1120;
@@ -3672,7 +3672,7 @@ with wl_right:
                             background:linear-gradient(90deg,#00D4FF,#7C3AED);">
                 </div>
             </div>
-            <div style="color:#334155; font-size:10px; margin-top:4px; text-align:right;">
+            <div style="color:var(--text-muted); font-size:10px; margin-top:4px; text-align:right;">
                 {min(100, fresh_count / 150 * 100):.0f}% full
             </div>
         </div>
@@ -3686,11 +3686,11 @@ with wl_right:
 st.markdown("""
 <div style="margin-top:60px; padding:20px 0; border-top:1px solid #1E293B;
             display:flex; justify-content:space-between; align-items:center;">
-    <span style="color:#334155; font-size:12px;">
+    <span style="color:var(--text-muted); font-size:12px;">
         Data: CoinGecko API &nbsp;·&nbsp; Alternative.me &nbsp;·&nbsp;
         Blockchain.com &nbsp;·&nbsp; Auto-refresh every 5 min
     </span>
-    <span style="color:#334155; font-size:12px;">
+    <span style="color:var(--text-muted); font-size:12px;">
         NeuroTrade AI © 2026 &nbsp;·&nbsp; For informational purposes only
     </span>
 </div>
