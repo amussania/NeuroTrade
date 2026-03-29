@@ -3448,9 +3448,10 @@ def save_email(email: str) -> bool:
             }).execute()
             # Also mirror to CSV as backup
             _csv_append_email(email)
+            st.session_state.pop("supabase_error", None)
             return True
-    except Exception:
-        pass
+    except Exception as e:
+        st.session_state["supabase_error"] = str(e)
     # CSV fallback
     return _csv_append_email(email)
 
@@ -3699,6 +3700,14 @@ with wl_right:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # DEBUG — remove after Supabase issue is diagnosed
+    st.markdown(
+        f'<div style="color:#475569; font-size:10px; margin-top:6px; font-family:monospace;">'
+        f'supabase_error: {st.session_state.get("supabase_error", "No error")}'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FOOTER
