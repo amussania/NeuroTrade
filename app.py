@@ -1357,31 +1357,51 @@ def compute_accuracy_tracker(btc_yearly, fng30):
         return None
     entries = fng30.get("data", [])[:30]
     results = []
-    for entry in entries:
+    for i, entry in enumerate(entries):
         fng_val = int(entry["value"])
-        if fng_val <= 30 or fng_val >= 70:
+        if fng_val >= 70:
+            # Greed Reversal Signal — unchanged
+            signal_date  = datetime.utcfromtimestamp(int(entry["timestamp"]))
+            signal_label = "Greed Reversal Signal"
+            signal_color = "#F97316"
+        elif fng_val < 30:
+            # Fear Reversal Signal — all three conditions must pass
+            # Condition 2: previous FNG entry also below 30
+            if i + 1 >= len(entries) or int(entries[i + 1]["value"]) >= 30:
+                continue
             signal_date = datetime.utcfromtimestamp(int(entry["timestamp"]))
-            signal_label = "Greed Reversal Signal" if fng_val >= 70 else "Fear Reversal Signal"
-            signal_color = "#F97316" if fng_val >= 70 else "#10B981"
-            df = btc_yearly.copy()
-            df["diff"] = (df["ts"] - signal_date).abs()
-            closest = df.loc[df["diff"].idxmin()]
-            price_at_signal = closest["price"]
-            for days, label in [(3, "3d"), (7, "7d")]:
-                target_date = signal_date + pd.Timedelta(days=days)
-                if target_date <= btc_yearly["ts"].iloc[-1]:
-                    df["diff2"] = (df["ts"] - target_date).abs()
-                    future_price = df.loc[df["diff2"].idxmin(), "price"]
-                    pct = ((future_price / price_at_signal) - 1) * 100
-                    results.append({
-                        "date":     signal_date.strftime("%b %d"),
-                        "signal":   signal_label,
-                        "color":    signal_color,
-                        "fng":      fng_val,
-                        "price_at": price_at_signal,
-                        "period":   label,
-                        "return":   pct,
-                    })
+            # Condition 3: BTC closing price on signal date > previous day's close
+            _df = btc_yearly.copy()
+            _df["_d"] = (_df["ts"] - signal_date).abs()
+            price_at_signal = _df.loc[_df["_d"].idxmin(), "price"]
+            prev_date = signal_date - pd.Timedelta(days=1)
+            _df["_dp"] = (_df["ts"] - prev_date).abs()
+            prev_price = _df.loc[_df["_dp"].idxmin(), "price"]
+            if price_at_signal <= prev_price:
+                continue
+            signal_label = "Fear Reversal Signal"
+            signal_color = "#10B981"
+        else:
+            continue
+        df = btc_yearly.copy()
+        df["diff"] = (df["ts"] - signal_date).abs()
+        closest = df.loc[df["diff"].idxmin()]
+        price_at_signal = closest["price"]
+        for days, label in [(3, "3d"), (7, "7d")]:
+            target_date = signal_date + pd.Timedelta(days=days)
+            if target_date <= btc_yearly["ts"].iloc[-1]:
+                df["diff2"] = (df["ts"] - target_date).abs()
+                future_price = df.loc[df["diff2"].idxmin(), "price"]
+                pct = ((future_price / price_at_signal) - 1) * 100
+                results.append({
+                    "date":     signal_date.strftime("%b %d"),
+                    "signal":   signal_label,
+                    "color":    signal_color,
+                    "fng":      fng_val,
+                    "price_at": price_at_signal,
+                    "period":   label,
+                    "return":   pct,
+                })
     return results if results else None
 
 def run_health_check(prices, fng, onchain, charts,
