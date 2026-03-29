@@ -151,33 +151,22 @@ KNOWLEDGE_BASE = [
 def render_chatbot():
     st.markdown("""
     <style>
-    div[data-testid="stRadio"] label p {
-        color: #CBD5E1 !important;
+    [data-testid="stButton"] button {
+        background: transparent !important;
+        border: 1px solid #CBD5E1 !important;
+        color: #1E293B !important;
+        border-radius: 20px !important;
+        padding: 4px 14px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
     }
-    div[data-testid="stRadio"] [data-baseweb="radio"] div:first-child {
-        border-color: #475569 !important;
+    [data-testid="stButton"] button:hover {
+        border-color: #7C3AED !important;
+        color: #7C3AED !important;
+        background: transparent !important;
     }
     </style>
     """, unsafe_allow_html=True)
-
-    if st.session_state.get('theme') == 'light':
-        st.markdown("""
-        <style>
-        [data-testid="stRadio"] input[type="radio"] {
-            accent-color: #334155;
-        }
-        [data-testid="stRadio"] label {
-            color: #1E293B !important;
-        }
-        div[data-testid="stRadio"] label p {
-            color: #1E293B !important;
-        }
-        div[data-testid="stRadio"] [data-baseweb="radio"] div:first-child {
-            border-color: #475569 !important;
-            background: transparent !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
 
     st.markdown('<div class="section-header">NeuroTrade AI Intelligence Course</div>', unsafe_allow_html=True)
 
@@ -228,41 +217,34 @@ def render_chatbot():
         st.markdown('<div style="height:12px;"></div>', unsafe_allow_html=True)
 
         idx = st.session_state.cb_topic_idx
-        nav_options = []
-        if level < len(item['levels']) - 1:
-            nav_options.append('Explain differently')
-        nav_options.append('Take the quiz')
         next_idx = (idx + 1) % len(KNOWLEDGE_BASE)
         next_name = KNOWLEDGE_BASE[next_idx]['name']
-        nav_options.append(f'Next topic: {next_name}')
-        nav_options.append('Back to topics')
 
-        nav_choice = st.radio(
-            'What would you like to do?',
-            nav_options,
-            key=f'nav_{idx}_{level}',
-            horizontal=True,
-            index=None,
-            label_visibility='collapsed'
-        )
+        nav_buttons = []
+        if level < len(item['levels']) - 1:
+            nav_buttons.append('Explain differently')
+        nav_buttons.append('Take the quiz')
+        nav_buttons.append(f'Next topic: {next_name}')
+        nav_buttons.append('Back to topics')
 
-        if nav_choice == 'Explain differently':
-            st.session_state.cb_level += 1
-            st.rerun()
-        elif nav_choice == 'Take the quiz':
-            st.session_state.cb_show_quiz = True
-            st.session_state.cb_quiz_result = None
-            st.rerun()
-        elif nav_choice and nav_choice.startswith('Next topic'):
-            st.session_state.cb_topic_idx = next_idx
-            st.session_state.cb_level = 0
-            st.session_state.cb_show_quiz = False
-            st.session_state.cb_quiz_result = None
-            st.rerun()
-        elif nav_choice == 'Back to topics':
-            st.session_state.cb_topic_idx = None
-            st.session_state.cb_level = 0
-            st.rerun()
+        nav_cols = st.columns(len(nav_buttons), gap="small")
+        for col, label in zip(nav_cols, nav_buttons):
+            with col:
+                if st.button(label, key=f'nav_{idx}_{level}_{label}', use_container_width=True):
+                    if label == 'Explain differently':
+                        st.session_state.cb_level += 1
+                    elif label == 'Take the quiz':
+                        st.session_state.cb_show_quiz = True
+                        st.session_state.cb_quiz_result = None
+                    elif label.startswith('Next topic'):
+                        st.session_state.cb_topic_idx = next_idx
+                        st.session_state.cb_level = 0
+                        st.session_state.cb_show_quiz = False
+                        st.session_state.cb_quiz_result = None
+                    elif label == 'Back to topics':
+                        st.session_state.cb_topic_idx = None
+                        st.session_state.cb_level = 0
+                    st.rerun()
 
     else:
         # Quiz
