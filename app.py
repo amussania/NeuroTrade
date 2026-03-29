@@ -3193,6 +3193,16 @@ else:
                     st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:#94A3B8; font-size:13px;">${r["price_at"]:,.0f}</div>', unsafe_allow_html=True)
                 with _row[4]:
                     st.markdown(f'<div class="oc-tile" style="padding:10px 14px; color:{ret_color}; font-size:13px; font-weight:700;">{ret_arrow} {abs(r["return"]):.2f}%</div>', unsafe_allow_html=True)
+                if r["signal"] == "Fear Reversal Signal":
+                    st.markdown(
+                        '<div style="color:#64748B; font-size:11px; padding:6px 14px; '
+                        'background:transparent; border:none; font-style:italic;">'
+                        'Signal triggered because: Extreme Fear for 2+ consecutive days '
+                        '&middot; Price momentum turning positive '
+                        '&middot; 7-day trend above -20% threshold.'
+                        '</div>',
+                        unsafe_allow_html=True,
+                    )
 
         st.markdown('<div style="color:#475569; font-size:11px; margin-top:12px; text-align:right;">Fear &amp; Greed used as contrarian indicator. Extreme fear historically precedes recovery. Extreme greed historically precedes correction. Not financial advice.</div>', unsafe_allow_html=True)
 
