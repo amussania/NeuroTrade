@@ -2089,7 +2089,7 @@ with right:
                 ("Mining Difficulty",  f"{difficulty:.2f}T", ""),
                 ("Transactions Today", f"{n_tx:,}",          ""),
                 ("Avg Block Time",     f"{blk_time:.1f}",    "min"),
-                ("BTC Circulating",    f"{total_btc:,.0f}",  "BTC"),
+                ("BTC Circulating",    f"{total_btc/1e6:.2f}M BTC", ""),
                 ("Trade Volume",       f"{trade_vol:,.1f}",  "BTC"),
             ]
 
