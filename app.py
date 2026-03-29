@@ -1710,6 +1710,13 @@ with sel_col:
     )
 st.session_state.selected_asset = selected_coin
 
+st.markdown(
+    '<div style="color:#475569; font-size:11px; margin-top:4px; margin-bottom:2px;">'
+    'Switch between 9 assets: BTC, ETH, SOL, XRP, ADA, AVAX, DOGE, DOT, LINK'
+    '</div>',
+    unsafe_allow_html=True,
+)
+
 st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
 
 selected_meta = COINS[selected_coin]
@@ -1755,6 +1762,10 @@ if score is not None:
                         {score}
                     </div>
                     <div class="intel-label" style="color:{s_color};">{label}</div>
+                    <div style="color:#64748B; font-size:11px; margin-top:6px; line-height:1.5;">
+                        Score above 70 = bullish signal. Below 30 = bearish signal.
+                        30 to 70 = neutral zone. Updated every 30 seconds.
+                    </div>
                 </div>
                 <div style="flex:1; min-width:130px; padding-bottom:8px;">
                     <div style="color:#475569; font-size:10px; font-weight:600;
@@ -2131,6 +2142,15 @@ with right:
                         <div class="oc-value">{val}<span class="oc-unit">{unit}</span></div>
                     </div>""", unsafe_allow_html=True)
                     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
+            st.markdown(
+                f'<div style="color:#475569; font-size:11px; text-align:right; '
+                f'margin-bottom:8px;">'
+                f'Source: Blockchain.com &nbsp;·&nbsp; Last updated: '
+                f'{datetime.utcnow().strftime("%H:%M")} UTC'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 
             w1, w2 = st.columns(2, gap="medium")
             with w1:
@@ -2720,11 +2740,11 @@ _dxy  = _safe_float(macro_dxy)
 _t10  = _safe_float(macro_t10)
 _unem = _safe_float(macro_unem)
 
-# Dollar index color: green < 100 (weak dollar good), red > 104 (strong dollar bad)
+# Dollar index color: green < 103 (weak dollar = crypto tailwind), orange 103-106, red > 106
 _dxy_color = (
-    "#10B981" if _dxy is not None and _dxy < 115 else
-    "#EF4444" if _dxy is not None and _dxy > 120 else
-    "#F97316" if _dxy is not None and _dxy >= 115 else
+    "#10B981" if _dxy is not None and _dxy < 103 else
+    "#EF4444" if _dxy is not None and _dxy > 106 else
+    "#F97316" if _dxy is not None and _dxy >= 103 else
     "#94A3B8"
 )
 
@@ -2741,7 +2761,7 @@ _macro_tiles = [
         f"{_dxy:.2f}" if _dxy is not None else "—",
         "",
         _dxy_color,
-        "Broad Dollar Index · Neutral 115 · Strong 120+",
+        "Broad Dollar Index · Weak below 103 · Strong above 106 · Crypto headwind above 106",
     ),
     (
         "10Y Inflation Expectations",
@@ -3320,8 +3340,11 @@ else:
     st.markdown(
         '<div style="background:rgba(234,179,8,0.06); border:1px solid rgba(234,179,8,0.15);'
         ' border-radius:12px; padding:10px 16px; margin-bottom:8px;">'
-        '<span style="color:#EAB308; font-size:12px; font-weight:600;">⚠ Unconfirmed transactions only.'
-        ' These are pending mempool movements not yet confirmed on-chain.</span>'
+        '<span style="color:#EAB308; font-size:12px; font-weight:600;">'
+        '⚠ Unconfirmed Bitcoin mempool transactions over 10 BTC &nbsp;·&nbsp; '
+        'Source: Blockchain.com &nbsp;·&nbsp; Updates every 5 minutes &nbsp;·&nbsp; '
+        'These are pending movements not yet confirmed on-chain.'
+        '</span>'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -3386,6 +3409,16 @@ else:
 WAITLIST_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "waitlist.csv")
 
 def load_waitlist_count() -> int:
+    # Try Supabase first
+    try:
+        sb = get_supabase()
+        if sb:
+            resp = sb.table("waitlist").select("email", count="exact").execute()
+            if resp.count is not None:
+                return resp.count
+    except Exception:
+        pass
+    # CSV fallback
     if not os.path.exists(WAITLIST_FILE):
         return 0
     try:
@@ -3395,8 +3428,34 @@ def load_waitlist_count() -> int:
         return 0
 
 def save_email(email: str) -> bool:
-    """Append email + timestamp to CSV. Returns False if email already exists."""
+    """Save email to Supabase waitlist table; fall back to CSV. Returns False if duplicate."""
     email = email.strip().lower()
+    # Try Supabase first
+    try:
+        sb = get_supabase()
+        if sb:
+            existing = (
+                sb.table("waitlist")
+                .select("email")
+                .eq("email", email)
+                .execute()
+            )
+            if existing.data:
+                return False
+            sb.table("waitlist").insert({
+                "email":     email,
+                "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            }).execute()
+            # Also mirror to CSV as backup
+            _csv_append_email(email)
+            return True
+    except Exception:
+        pass
+    # CSV fallback
+    return _csv_append_email(email)
+
+def _csv_append_email(email: str) -> bool:
+    """Append to local CSV; returns False if already present."""
     exists = False
     if os.path.exists(WAITLIST_FILE):
         try:
@@ -3407,12 +3466,17 @@ def save_email(email: str) -> bool:
     if exists:
         return False
     write_header = not os.path.exists(WAITLIST_FILE)
-    with open(WAITLIST_FILE, "a", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        if write_header:
-            w.writerow(["email", "timestamp"])
-        w.writerow([email, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")])
+    try:
+        with open(WAITLIST_FILE, "a", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            if write_header:
+                w.writerow(["email", "timestamp"])
+            w.writerow([email, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")])
+    except Exception:
+        pass
     return True
+
+st.markdown('<div class="section-header">Learn Crypto Trading · 12 Topics with Quizzes</div>', unsafe_allow_html=True)
 
 render_chatbot()
 
