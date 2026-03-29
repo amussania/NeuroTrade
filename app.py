@@ -3653,9 +3653,6 @@ with wl_right:
         </div>
         """, unsafe_allow_html=True)
 
-    if st.session_state.get('supabase_error'):
-        st.write(f"Debug: {st.session_state['supabase_error']}")
-
     # Counter — always visible
     fresh_count = load_waitlist_count()
     st.markdown(f"""
@@ -3682,13 +3679,6 @@ with wl_right:
     </div>
     """, unsafe_allow_html=True)
 
-    # DEBUG — remove after Supabase issue is diagnosed
-    st.markdown(
-        f'<div style="color:#475569; font-size:10px; margin-top:6px; font-family:monospace;">'
-        f'supabase_error: {st.session_state.get("supabase_error", "No error")}'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FOOTER
