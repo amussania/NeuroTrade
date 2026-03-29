@@ -163,11 +163,18 @@ def render_chatbot():
     if st.session_state.get('theme') == 'light':
         st.markdown("""
         <style>
+        [data-testid="stRadio"] input[type="radio"] {
+            accent-color: #334155;
+        }
+        [data-testid="stRadio"] label {
+            color: #1E293B !important;
+        }
         div[data-testid="stRadio"] label p {
             color: #1E293B !important;
         }
         div[data-testid="stRadio"] [data-baseweb="radio"] div:first-child {
             border-color: #475569 !important;
+            background: transparent !important;
         }
         </style>
         """, unsafe_allow_html=True)

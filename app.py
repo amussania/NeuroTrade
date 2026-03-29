@@ -1656,6 +1656,13 @@ if st.session_state.theme == "light":
         --selectbox-color:      #0F172A;
         --selectbox-border:     #CBD5E1;
     }
+    [data-testid="stRadio"] input[type="radio"] {
+        accent-color: #334155 !important;
+        background: transparent !important;
+    }
+    [data-testid="stRadio"] label p {
+        color: #1E293B !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
