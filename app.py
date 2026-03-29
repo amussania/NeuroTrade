@@ -3618,6 +3618,20 @@ with wl_right:
             st.rerun()
 
     else:
+        st.markdown("""
+        <a href="https://anuvrat0.gumroad.com/l/hulnct" target="_blank" rel="noopener"
+           style="display:block; width:100%; text-align:center;
+                  background:linear-gradient(90deg,#00D4FF,#7C3AED);
+                  color:#FFFFFF; font-size:18px; font-weight:800;
+                  padding:18px 32px; border-radius:16px;
+                  text-decoration:none; letter-spacing:0.5px; margin-bottom:16px;">
+            ⚡ Subscribe Now · $79/month · 150 Founding Spots
+        </a>
+        <div style="text-align:center; color:#64748B; font-size:12px; margin-bottom:24px;">
+            Founding member price locked forever · Increases to $99 after 150 members · Not financial advice
+        </div>
+        """, unsafe_allow_html=True)
+
         with st.form("waitlist_form", clear_on_submit=True):
             email_input = st.text_input(
                 label="Email address",
@@ -3683,6 +3697,19 @@ with wl_right:
 # ═══════════════════════════════════════════════════════════════════════════════
 # FOOTER
 # ═══════════════════════════════════════════════════════════════════════════════
+st.markdown("""
+<div style="text-align:center; margin-bottom:24px;">
+    <a href="https://anuvrat0.gumroad.com/l/hulnct" target="_blank" rel="noopener"
+       style="display:inline-block; text-align:center;
+              background:linear-gradient(90deg,#00D4FF,#7C3AED);
+              color:#FFFFFF; font-size:14px; font-weight:700;
+              padding:10px 28px; border-radius:12px;
+              text-decoration:none; letter-spacing:0.5px;">
+        ⚡ Get Access · $79/month
+    </a>
+</div>
+""", unsafe_allow_html=True)
+
 st.markdown("""
 <div style="margin-top:60px; padding:20px 0; border-top:1px solid #1E293B;
             display:flex; justify-content:space-between; align-items:center;">
