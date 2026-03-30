@@ -2118,6 +2118,8 @@ with right:
                 hash_rate = hash_rate_raw / 1e9
             difficulty = difficulty / 1e12
             n_tx       = onchain.get("n_tx", 0)
+            if n_tx and n_tx < 1000:   # API returned value in thousands — rescale
+                n_tx *= 1000
             blk_time   = onchain.get("minutes_between_blocks", 0)
             total_btc  = onchain.get("totalbc", 0) / 1e8
             trade_vol  = onchain.get("trade_volume_btc", 0)
